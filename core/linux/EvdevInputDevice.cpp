@@ -197,7 +197,10 @@ bool EvdevInputDevice::processEvent(){
     while(true){
 
         input_event ev;
+
+        ukc_log(TRACE,m_fileName,"begin to read ");
         int rc = libevdev_next_event(m_evdev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
+        ukc_log(TRACE,"read complete ,result",rc);
 
         if(rc == LIBEVDEV_READ_STATUS_SYNC){
             //TODO
@@ -251,6 +254,10 @@ bool EvdevInputDevice::processEvent(){
 
             continue;
         }
+
+        ukc_log(ERROR,"event read failed","");
+        return false;
+
     }
 
     BOOST_ASSERT(false);
