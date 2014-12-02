@@ -1,8 +1,6 @@
 #include "KeyMap.hpp"
 
-#include "input.h"
-
-#include "libevdev-strip.h"
+#include <libevdev/libevdev.h>
 
 unsigned int KeyMap::nameToCode(const std::string& name){
 

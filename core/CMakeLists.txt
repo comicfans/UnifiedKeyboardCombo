@@ -22,7 +22,6 @@ add_library(ukc_core
     ${ukc_core_srcs}
     )
 
-target_link_libraries(ukc_core libevdev_strip)
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message("${EVDEV_LIBRARIES}")

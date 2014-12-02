@@ -11,11 +11,8 @@ set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -fsanitize=address)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fsanitize=address")
 
-include_directories(${Boost_INCLUDE_DIR} libevdev core)
+include_directories(${Boost_INCLUDE_DIR} core)
 
-
-
-add_subdirectory(libevdev)
 
 add_subdirectory(core)
 
