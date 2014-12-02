@@ -18,7 +18,8 @@
 #include <libevdev/libevdev-uinput.h>
  
 EvdevInputDevice::EvdevInputDevice(string name,string vid,string pid,
-            string physical,string bus,string filename){
+            string physical,string bus,string filename):
+    EvdevInputDevice(){
     m_name=name;
     m_vid=vid;
     m_pid=pid;
@@ -27,6 +28,13 @@ EvdevInputDevice::EvdevInputDevice(string name,string vid,string pid,
     m_fileName=filename;
 }
 
+EvdevInputDevice::EvdevInputDevice(){
+    m_keyMaps.reset(new uint16_t[KEY_CNT]);
+    for (int i = 0; i < KEY_CNT; ++i) {
+        //linux key map is dense map
+        m_keyMaps[i]=i;
+    }
+}
   
 
 std::unordered_map<int,string> createBusNames(){
@@ -77,7 +85,8 @@ static int is_event_device(const struct dirent *dir) {
 	return strncmp(EVENT_DEV_NAME, dir->d_name, 5) == 0;
 }
 
-EvdevInputDevice::EvdevInputDevice(const char * filename){
+EvdevInputDevice::EvdevInputDevice(const char * filename)
+:EvdevInputDevice(){
 
     ukc_log(INFO,"creating device from :",filename);
 
@@ -176,12 +185,29 @@ EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 bool EvdevInputDevice::configure(const vector<KeyMap> & keyMaps,
         bool disableNonKeyEvent,bool disableUnmappedKey){
 
-    m_keyMapCache.clear();
 
     for(auto &keyMap:keyMaps){
-        //TODO invalid value ?
         ukc_log(TRACE,"map key ",keyMap.fromKey.c_str(),keyMap.toKey.c_str());
-        m_keyMapCache[keyMap.fromKeyCode()]=keyMap.toKeyCode();
+
+        int fromKeyCode=keyMap.fromKeyCode();
+
+        if (fromKeyCode==-1) {
+            ukc_log(ERROR,"bad from key name",keyMap.fromKey.c_str());
+            continue;
+        }
+
+        int toKeyCode=keyMap.toKeyCode();
+
+        if (toKeyCode==-1) {
+            ukc_log(ERROR,"bad to key name",keyMap.toKey.c_str());
+            continue;
+        }
+
+        BOOST_ASSERT(
+                fromKeyCode>=0 && fromKeyCode<KEY_CNT && 
+                toKeyCode>=0 && toKeyCode<KEY_CNT);
+
+        m_keyMaps[fromKeyCode]=toKeyCode;
     }
 
     m_disableNonKeyEvent=disableNonKeyEvent;
@@ -216,15 +242,16 @@ bool EvdevInputDevice::processEvent(){
         if (rc == LIBEVDEV_READ_STATUS_SUCCESS){
 
             if (ev.type==EV_KEY) {
-                auto it=m_keyMapCache.find(ev.code);
+
+                int toKeyCode=m_keyMaps[ev.code];
 
                 //mapped key
-                if(it!=m_keyMapCache.end()){
+                if(toKeyCode!=ev.code){
 
-                    ev.code=it->second;
+                    ev.code=toKeyCode;
                     ukc_log(TRACE,"map to key ",&ev);
 
-                    UinputKeyboard::instance().postKeyEvent(it->second,ev.value);
+                    UinputKeyboard::instance().postKeyEvent(toKeyCode,ev.value);
 
                     continue;
                 }

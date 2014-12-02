@@ -89,7 +89,7 @@ private:
     
     bool m_disableNonKeyEvent=true;
 
-    bool m_disableUnmappedKey=true;
+    bool m_disableUnmappedKey=false;
 
 };
 

@@ -4,14 +4,12 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <unordered_map>
 
 #include "KeyMap.hpp"
 
 using std::string;
 using std::unique_ptr;
 using std::vector;
-using std::unordered_map;
 
 struct libevdev;
 struct libevdev_uinput;
@@ -50,6 +48,8 @@ public:
 
 private:
 
+    EvdevInputDevice();
+
     EvdevInputDevice(const char * filename);
 
     bool grabAndPrepare();
@@ -72,8 +72,7 @@ private:
 
     string m_uniq;
 
-
-    unordered_map<unsigned int,unsigned int> m_keyMapCache;
+    unique_ptr<uint16_t[]> m_keyMaps;
 
     static constexpr int INVALID_FD=-1;
 

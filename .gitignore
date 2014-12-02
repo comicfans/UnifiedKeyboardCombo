@@ -5,3 +5,5 @@ clang
 gcc
 .ycm_extra_conf.py
 .ycm_extra_conf.pyc
+clang
+gcc_debug
