@@ -25,6 +25,7 @@
 #include "Utility.hpp"
 
 #include <sys/epoll.h>
+#include <sys/signalfd.h>
 
 using std::lock_guard;
 
@@ -139,6 +140,75 @@ void MainLoop::enterLoop(){
 
 static const string DEFAULT_CONFIG_JSON="ukc.json";
 
+static int
+createInotifyFd()
+{
+  int i;
+  int inotify_fd;
+
+  /* Create new inotify device */
+  if ((inotify_fd = inotify_init ()) < 0)
+    {
+      fprintf (stderr,
+               "Couldn't setup new inotify device: '%s'\n",
+               strerror (errno));
+      return -1;
+    }
+
+  /* Allocate array of monitor setups */
+  n_monitors = argc - 1;
+  monitors = malloc (n_monitors * sizeof (monitored_t));
+
+  /* Loop all input directories, setting up watches */
+  for (i = 0; i < n_monitors; ++i)
+    {
+      monitors[i].path = strdup (argv[i + 1]);
+      if ((monitors[i].wd = inotify_add_watch (inotify_fd,
+                                               monitors[i].path,
+                                               event_mask)) < 0)
+        {
+          fprintf (stderr,
+                   "Couldn't add monitor in directory '%s': '%s'\n",
+                   monitors[i].path,
+                   strerror (errno));
+          exit (EXIT_FAILURE);
+        }
+      printf ("Started monitoring directory '%s'...\n",
+              monitors[i].path);
+    }
+
+  return inotify_fd;
+}
+static int
+createSignalFd()
+{
+  int signal_fd;
+  sigset_t sigmask;
+
+  /* We want to handle SIGINT and SIGTERM in the signal_fd, so we block them. */
+  sigemptyset (&sigmask);
+  sigaddset (&sigmask, SIGINT);
+  sigaddset (&sigmask, SIGTERM);
+
+  if (sigprocmask (SIG_BLOCK, &sigmask, NULL) < 0)
+    {
+      fprintf (stderr,
+               "Couldn't block signals: '%s'\n",
+               strerror (errno));
+      return -1;
+    }
+
+  /* Get new FD to read signals from it */
+  if ((signal_fd = signalfd (-1, &sigmask, 0)) < 0)
+    {
+      fprintf (stderr,
+               "Couldn't setup signal FD: '%s'\n",
+               strerror (errno));
+      return -1;
+    }
+
+  return signal_fd;
+}
 MainLoop::MainLoop(){
 
     //reade default config
