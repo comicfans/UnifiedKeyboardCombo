@@ -8,20 +8,20 @@
 #include <unistd.h>
 
 #include <unordered_map>
+#include <boost/assert.hpp>
 #include <iostream>
 
 #include "UinputKeyboard.hpp"
+#include "Utility.hpp"
 
 #include <libevdev/libevdev.h>
 #include <libevdev/libevdev-uinput.h>
  
-EvdevInputDevice::EvdevInputDevice(string vid,string pid,
-            int hubNumber,int portNumber,
+EvdevInputDevice::EvdevInputDevice(string name,string vid,string pid,
             string physical,string bus,string filename){
+    m_name=name;
     m_vid=vid;
     m_pid=pid;
-    m_hubNumber=hubNumber;
-    m_portNumber=portNumber;
     m_physical=physical;
     m_bus=bus;
     m_fileName=filename;
@@ -62,7 +62,7 @@ string EvdevInputDevice::description()const{
 
     return 
         "Filename:"+m_fileName+ 
-        "Name: "+m_name +
+        ", Name: "+m_name +
         ", Bus:"+m_bus +
         ", PID: "+m_pid+
         ", VID:"+m_vid+
@@ -77,6 +77,62 @@ static int is_event_device(const struct dirent *dir) {
 	return strncmp(EVENT_DEV_NAME, dir->d_name, 5) == 0;
 }
 
+EvdevInputDevice::EvdevInputDevice(const char * filename){
+
+    log(INFO,"creating device from :",filename);
+
+    m_evdevFd = open(filename, O_RDONLY|O_NONBLOCK);
+
+    if (m_evdevFd < 0){
+        log(DEBUG,"can not open file :",filename,",maybe you need root permission");
+        return;
+    }
+
+    int rc=libevdev_new_from_fd(m_evdevFd,&m_evdev);
+
+    if(rc<0){
+        log(DEBUG,"can not open file :",filename,",maybe you need root permission");
+        return ;
+    }
+
+    if (!libevdev_has_event_type(m_evdev,EV_KEY)){
+        //not support EV_KEY
+        log(INFO,filename," not support EV_KEY,skip it");
+        
+        libevdev_free(m_evdev);
+        m_evdev=nullptr;
+        return;
+    }
+
+    m_fileName=filename;
+    m_name=libevdev_get_name(m_evdev);
+
+    int busType=libevdev_get_id_bustype(m_evdev);
+
+    auto it = BUS_MAP_NAME.find(busType);
+
+    //some evdev input has no bus (uinput,HDA Intel MID Front Headphone)
+    bool hasBus=(it!=BUS_MAP_NAME.end());
+    m_bus=(hasBus?it->second:"");
+
+
+    char fourChar[5]="0000";
+
+
+    snprintf(fourChar,5,"%04x",libevdev_get_id_vendor(m_evdev));
+
+    m_vid=fourChar;
+
+    snprintf(fourChar,5,"%04x",libevdev_get_id_product(m_evdev));
+
+    m_pid=fourChar;
+
+    // uinput has no phys
+        
+    auto p=libevdev_get_phys(m_evdev);
+    m_physical=p?p:"";
+
+}
 
 EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 
@@ -93,68 +149,21 @@ EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 	for (i = 0; i < ndev; i++)
 	{
 		char fname[64];
-		int fd = -1;
-		char name[256] = "???";
 
 		snprintf(fname, sizeof(fname),
 			 "%s/%s", DEV_INPUT_EVENT, namelist[i]->d_name);
 
-		fd = open(fname, O_RDONLY);
-
-		if (fd < 0){
-			continue;
-        }
-
-	
-		int rc=ioctl(fd, EVIOCGNAME(sizeof(name)), name);
-
-        if (rc < 0){
-            //can not get name
-            continue;
-        }
-
-        auto thisOne = unique_ptr<EvdevInputDevice>(new EvdevInputDevice());
-	
-        thisOne->m_fileName=fname;
-
-        thisOne->m_name=name;
-
-        unsigned short id[4];
-
-        rc=ioctl(fd, EVIOCGID, id);
-
-        if(rc<0){
-            if(errno != ENOENT){
-                continue;
-            }
-        }
-
-        thisOne->m_bus=BUS_MAP_NAME.find(id[ID_BUS])->second;
-
-        char fourChar[5]="0000";
-        snprintf(fourChar,5,"%04x",id[ID_VENDOR]);
-        thisOne->m_vid=fourChar;
-
-        snprintf(fourChar,5,"%04x",id[ID_PRODUCT]);
-        thisOne->m_pid=fourChar;
-
-	
-        char physicalBuf[256];
-        memset(physicalBuf,256,0);
-
-        rc = ioctl(fd, EVIOCGPHYS(sizeof(physicalBuf) - 1), physicalBuf);
-        if(rc<0){
-            // uinput has no phys
-            thisOne->m_physical="uinput";
-        }else{
-            thisOne->m_physical=physicalBuf;
-        }
-
-
-		close(fd);
+    
+        auto thisOne = unique_ptr<EvdevInputDevice>(
+                new EvdevInputDevice(fname));
+		
 		free(namelist[i]);
 
-        ret.push_back(std::move(thisOne));
+        if(thisOne->m_evdev!=nullptr){
+
+            log(INFO,thisOne->description()," created");
+            ret.push_back(std::move(thisOne));
+        }
 	}
 
     free(namelist);
@@ -164,13 +173,21 @@ EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 
 
 
-void EvdevInputDevice::setKeyMaps(const vector<KeyMap> & keyMaps){
+bool EvdevInputDevice::configure(const vector<KeyMap> & keyMaps,
+        bool disableNonKeyEvent,bool disableUnmappedKey){
+
     m_keyMapCache.clear();
 
     for(auto &keyMap:keyMaps){
         //TODO invalid value ?
+        log(TRACE,"map key ",keyMap.fromKey.c_str(),keyMap.toKey.c_str());
         m_keyMapCache[keyMap.fromKeyCode()]=keyMap.toKeyCode();
     }
+
+    m_disableNonKeyEvent=disableNonKeyEvent;
+    m_disableUnmappedKey=disableUnmappedKey;
+
+    return grabAndPrepare();
 }
 
 
@@ -179,71 +196,119 @@ bool EvdevInputDevice::processEvent(){
     input_event ev;
     int rc = libevdev_next_event(m_evdev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
 
-
     if (rc == 0){
 
-        bool passthrough=true;
-
-        if (ev.type==EV_KEY)
-        {
+        if (ev.type==EV_KEY) {
             auto it=m_keyMapCache.find(ev.code);
+
+            //mapped key
             if(it!=m_keyMapCache.end()){
-                passthrough=false;
+
+                ev.code=it->second;
+                log(TRACE,"map to key ",&ev);
 
                 UinputKeyboard::instance().postKeyEvent(it->second,ev.value);
 
+                return true;
             }
+
+            //unmapped key
+            if (!m_disableUnmappedKey) {
+                log(TRACE,"passthrough unmapped key code,value :",&ev);
+                UinputKeyboard::instance().postKeyEvent(ev.code,ev.value);
+            }else{
+                log(TRACE,"drop unmapped key : ",&ev);
+            }
+                
+            return true;
         }
 
 
-
-
-
-        if (passthrough) {
-
-            libevdev_uinput_write_event(m_uinputDev,ev.type,ev.code,ev.value);
-
+        if(m_disableNonKeyEvent){
+            log(TRACE,"drop none EV_KEY event :",&ev);
+            return true;
         }
+
+        log(TRACE,"passthrough event :",&ev);
+
+        BOOST_ASSERT(m_uinputDev);
+
+        libevdev_uinput_write_event(m_uinputDev,ev.type,ev.code,ev.value);
+
+        return true;
     }
        
             
     return (rc == 1 || rc == 0 || rc == -EAGAIN);
 }
 
-bool EvdevInputDevice::prepare(){
-
-    m_evdevFd=open(m_fileName.c_str(),O_RDONLY|O_NONBLOCK);
-
-    if (m_evdevFd<0){
-        return false;
-    }
-
-    int rc=libevdev_new_from_fd(m_evdevFd,&m_evdev);
+bool EvdevInputDevice::grabAndPrepare(){
+    
+    int rc=libevdev_grab(m_evdev,LIBEVDEV_GRAB);
 
     if(rc<0){
         return false;
     }
 
-    rc=libevdev_grab(m_evdev,LIBEVDEV_GRAB);
-
-    if(rc<0){
-        return false;
+    if (m_disableNonKeyEvent ) {
+        return true;
     }
 
+    int needPassthroughType[]={
+        EV_REL,
+        EV_ABS,
+        EV_SW ,
+        EV_LED,
+        EV_SND,
+        EV_FF ,
+        EV_PWR,
+        EV_FF_STATUS
+    };
 
-    libevdev_set_name(m_evdev,("shadow of "+m_name).c_str());
+
+    bool hasOtherEventType=false;
+    for (int i = 0; i < sizeof(needPassthroughType)/sizeof(int); ++i){
+        if(libevdev_has_event_type(m_evdev,needPassthroughType[i])){
+
+            hasOtherEventType=true;
+            break;
+        }
+    }
+
+    //no need to create shadow input
+    if (!hasOtherEventType || m_disableNonKeyEvent) {
+        log(DEBUG,"device only support EV_KEY, no need to create shadow input ,",m_name.c_str());
+        return true;
+    }
+
+    log(INFO,"will create shadow input of ",m_name.c_str());
+
+    libevdev_set_name(m_evdev,("Non-Key event of "+m_name).c_str());
 
     rc=libevdev_uinput_create_from_device(m_evdev,
             LIBEVDEV_UINPUT_OPEN_MANAGED,&m_uinputDev);
+
+    if (rc<0){
+        return false;
+    }
 
     return true;
 }
 
 EvdevInputDevice::~EvdevInputDevice(){
-    if (m_evdev)
-    {
+
+    if(m_uinputDev){
+
+        libevdev_uinput_destroy(m_uinputDev);
+    }
+
+    if (m_evdev) {
         libevdev_grab(m_evdev,LIBEVDEV_UNGRAB);
         libevdev_free(m_evdev);
+    }
+        
+    if (m_evdevFd>=0) {
         close(m_evdevFd);
     }
 }
+

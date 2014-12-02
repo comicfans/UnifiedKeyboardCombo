@@ -4,6 +4,7 @@
 #include "NotMatcher.hpp"
 
 #include <boost/property_tree/ptree.hpp>
+#include <boost/optional.hpp>
 
 Profile::Profile(){
     m_matcher.reset(new NotMatcher);
@@ -34,6 +35,10 @@ static const string NAME_KEY="NAME";
 
 static const string TO_KEY="TO";
 
+static const string DISABLE_NON_KEY_EVENT_KEY="DISABLE_NON_KEY_EVENT";
+
+static const string DISABLE_UNMAPPED_KEY_KEY="DISABLE_UNMAPPED_KEY";
+
 void Profile::read(const ptree& readFrom){
 
     m_name=readFrom.get<string>(NAME_KEY);
@@ -46,6 +51,16 @@ void Profile::read(const ptree& readFrom){
     auto &matcherTree=readFrom.get_child(MATCHER_KEY);
 
     m_matcher.reset(DeviceMatcher::read(matcherTree));
+
+    boost::optional<bool> value=readFrom.get_optional<bool>(DISABLE_NON_KEY_EVENT_KEY);
+    if (value){
+        m_disableNonKeyEvent=*value;
+    }
+
+    value=readFrom.get_optional<bool>(DISABLE_UNMAPPED_KEY_KEY);
+    if(value){
+        m_disableUnmappedKey=*value;
+    }
 
 
     for(auto &value:readFrom.get_child(KEY_MAPS_KEY)){
@@ -69,6 +84,9 @@ void Profile::write(ptree& writeTo)const{
     DeviceMatcher::write(*m_matcher,matcherTree);
 
     writeTo.add_child(MATCHER_KEY,matcherTree);
+
+    writeTo.put(DISABLE_NON_KEY_EVENT_KEY,m_disableNonKeyEvent);
+    writeTo.put(DISABLE_UNMAPPED_KEY_KEY,m_disableUnmappedKey);
 
     ptree keyMapsRoot;
 

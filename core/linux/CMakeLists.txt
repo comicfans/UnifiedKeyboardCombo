@@ -1,11 +1,12 @@
 
 find_package(Evdev REQUIRED)
 
+include_directories(${EVDEV_INCLUDE_DIR})
+
 set(linux_srcs 
     ${CMAKE_CURRENT_SOURCE_DIR}/EvdevInputDevice.cpp 
-    ${CMAKE_CURRENT_SOURCE_DIR}/VidPidMatcher.cpp 
-    ${CMAKE_CURRENT_SOURCE_DIR}/HubPortMatcher.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/UinputKeyboard.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/EvdevMatcher.cpp
     )
 
 

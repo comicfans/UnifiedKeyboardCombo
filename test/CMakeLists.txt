@@ -7,25 +7,20 @@ endif()
 
 
 if(${GTEST_FOUND})
-
     include_directories(${GTEST_INCLUDE_DIR})
-
     foreach(test_filename 
             test_scan 
-            test_vid_pid_matcher
-            test_hub_port_matcher
+            test_evdev_matcher
+            test_utility
             test_multi_matcher)
 
         add_executable(${test_filename} ${test_filename}.cpp)
 
         target_link_libraries(${test_filename} 
-            ukc_core ${GTEST_BOTH_LIBRARIES})
+            ukc_core ${GTEST_BOTH_LIBRARIES} pthread)
 
         add_test(${test_filename}_test ${test_filename})
-
     endforeach()
-
-
 endif()
 
 

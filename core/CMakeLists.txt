@@ -12,6 +12,7 @@ set(ukc_core_srcs ${ukc_core_srcs}
     KeyMap.cpp MainLoop.cpp
     NotMatcher.cpp
     GlobalInit.cpp
+    Utility.cpp
     Profile.cpp
     )
 

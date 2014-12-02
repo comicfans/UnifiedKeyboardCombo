@@ -3,7 +3,7 @@
 #include "AllMatcher.hpp"
 #include "PlatformInc.hpp"
 
-EvdevInputDevice input("00ac","89ac",0,0,"physcial","BUS_USB","fakeinputname");
+EvdevInputDevice input("fakeinput","00ac","89ac","physcial","BUS_USB","fakeinputname");
 
 TEST(MultiMatcherTest,testDefaultMatch){
 

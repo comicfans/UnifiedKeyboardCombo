@@ -21,18 +21,13 @@ class EvdevInputDevice
 public:
 
     //only for test purpose
-    EvdevInputDevice(string vid,string pid,
-            int hubNumber,int portNumber,
+    EvdevInputDevice(string name,string vid,string pid,
             string physical,string bus,string filename);
 
-    const std::string& vid()const{return m_vid;}
-    const std::string& pid()const {return m_pid;}
-
-    int hubNumber()const {return m_hubNumber;}
-
-    int portNumber()const{return m_portNumber;}
-
-    void setKeyMaps(const vector<KeyMap> & keyMaps );
+    const string& vid()const{return m_vid;}
+    const string& pid()const {return m_pid;}
+    const string& name()const{return m_name;}
+    const string& physical()const{return m_physical;}
 
     bool processEvent();
 
@@ -45,19 +40,21 @@ public:
 
     static DeviceListType scanDevices();
 
-    bool prepare();
+    bool configure(const vector<KeyMap> & keyMaps,
+            bool disableNonKeyEvent,bool disableUnmappedKey);
+
 
     ~EvdevInputDevice();
 
 private:
 
-    EvdevInputDevice()=default;
+    EvdevInputDevice(const char * filename);
+
+    bool grabAndPrepare();
 
     string m_pid;
     string m_vid;
 
-    int m_hubNumber;
-    int m_portNumber;
 
     //not used now
     string m_name;
@@ -71,15 +68,28 @@ private:
     //not used now
     string m_fileName;
 
+    string m_uniq;
+
+
     unordered_map<unsigned int,unsigned int> m_keyMapCache;
 
     static constexpr int INVALID_FD=-1;
 
     int m_evdevFd=INVALID_FD;
 
+    bool m_disableUnmappedKey=false;
+
+    bool m_disableNonKeyEvent=false;
+
+    bool m_mayPassthrough;
+
     libevdev *m_evdev=nullptr;
 
+    /**
+     * @brief if support other events ,create shadow uinput to passthrough
+     * */
     libevdev_uinput *m_uinputDev = nullptr;
+
 };
 
 

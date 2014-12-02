@@ -22,6 +22,7 @@
 
 #include "PlatformInc.hpp"
 #include "DeviceMatcher.hpp"
+#include "Utility.hpp"
 
 using std::lock_guard;
 
@@ -55,19 +56,22 @@ void MainLoop::addProfile(const Profile& profile){
 
 void MainLoop::enterLoop(){
 
-    vector<InputDevice*> failedOnes;
     while(!m_quit){
 
         if(m_profileChanged){
+            log(INFO,"profile changed ,reconfig","");
 
             ScopeLock locker(m_profileMutex);
             configure();
         }
 
+    
+        vector<InputDevice*> failedOnes;
         for(auto &device:m_currentDevices){
             bool thisOk=device->processEvent();
 
             if (!thisOk){
+                log(ERROR,device->name()," process event failed, remove it");
                 failedOnes.push_back(device.get());
             }
         }
@@ -77,14 +81,17 @@ void MainLoop::enterLoop(){
         }
 
         int index=0;
+        auto newEnd=m_currentDevices.end();
         for(InputDevice *failed:failedOnes){
             do{
                 if(m_currentDevices[index].get()==failed){
-                    m_currentDevices.erase(m_currentDevices.begin()+index);
+                    newEnd=m_currentDevices.erase(m_currentDevices.begin()+index);
                     break;
                 }
             }while(++index);
         }
+
+        m_currentDevices.resize(newEnd-m_currentDevices.begin());
     }
 
     m_currentDevices.clear();
@@ -123,23 +130,42 @@ void MainLoop::configure(){
 
     //match device 
     //
-    for(auto &profile:m_profiles){
+        
+    for(auto &inputDevice: deviceList){
+   
+        for(auto &profile:m_profiles){
 
-        for(auto &inputDevice: deviceList){
-
+            //if match one profile ,just use it.
             if(profile.matcher().matchDevice(*inputDevice)){
-                inputDevice->setKeyMaps(profile.keyMaps());
 
-                bool prepare=inputDevice->prepare();
+                log(DEBUG,"profile match device:",profile.name().c_str(),inputDevice->name().c_str());
 
-                if(!prepare){
-                    continue;
+                bool configureOk=inputDevice->configure(profile.keyMaps(),
+                        profile.disableNonKeyEvent(),
+                        profile.disableUnmappedKey());
+
+
+                if(configureOk){
+                
+                    log(DEBUG,inputDevice->name(),"configure ok");
+                    m_currentDevices.push_back(std::move(inputDevice));
+                }   else{
+
+                    log(ERROR,inputDevice->name(),"configure failed");
                 }
+                break;
 
-                m_currentDevices.push_back(std::move(inputDevice));
             }
         }
     }
+
+    if (!m_currentDevices.empty()) {
+        log(DEBUG,"matched devices list:","");
+        for(auto &dev:m_currentDevices){
+            log(DEBUG,dev->description(),"");
+        }
+    }
+    
 
     m_profileChanged=false;
 }

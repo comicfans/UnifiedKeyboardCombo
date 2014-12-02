@@ -69,6 +69,14 @@ public:
 
     const vector<KeyMap> & keyMaps()const{return m_keyMaps;}
 
+    void setDisableNonKeyEvent(bool value){m_disableNonKeyEvent=value;}
+
+    bool disableNonKeyEvent()const{return m_disableNonKeyEvent;}
+
+    void setDisableUnmappedKey(bool value){m_disableUnmappedKey=value;}
+
+    bool disableUnmappedKey()const{return m_disableUnmappedKey;}
+
 private:
 
     string m_name;
@@ -79,6 +87,9 @@ private:
 
     vector<KeyMap> m_keyMaps;
     
+    bool m_disableNonKeyEvent=true;
+
+    bool m_disableUnmappedKey=true;
 
 };
 

@@ -17,56 +17,56 @@
  */
 
 #include "PlatformInc.hpp"
-#include "linux/VidPidMatcher.hpp"
+#include "linux/EvdevMatcher.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 
 #include <gtest/gtest.h>
 
     
-EvdevInputDevice input("00ac","89ac",0,0,"physcial","BUS_USB","fakeinputname");
+EvdevInputDevice input("fakedevice","00ac","89ac","physcial","BUS_USB","fakeinputname");
 
-TEST(VidPidMatcherTest,testVidEqual){
+TEST(EvdevMatcherTest,testVidEqual){
 
-    VidPidMatcher matcher;
+    EvdevMatcher matcher;
 
-    matcher.setWild(VidPidMatcher::VID,"00ac");
+    matcher.setWild(EvdevMatcher::VID,"00ac");
 
     ASSERT_TRUE(matcher.matchDevice(input));
 }
 
-TEST(VidPidMatcherTest,testVidNotEqual){
+TEST(EvdevMatcherTest,testVidNotEqual){
 
-    VidPidMatcher matcher;
+    EvdevMatcher matcher;
 
-    matcher.setWild(VidPidMatcher::VID,"09ac");
+    matcher.setWild(EvdevMatcher::VID,"09ac");
 
     ASSERT_FALSE(matcher.matchDevice(input));
 }
 
-TEST(VidPidMatcherTest,testVidWild){
+TEST(EvdevMatcherTest,testVidWild){
 
-    VidPidMatcher matcher;
+    EvdevMatcher matcher;
 
-    matcher.setWild(VidPidMatcher::VID,"00a*");
+    matcher.setWild(EvdevMatcher::VID,"00a*");
 
     ASSERT_TRUE(matcher.matchDevice(input));
 }
 
 
-TEST(VidPidMatcherTest,testSaveLoad){
+TEST(EvdevMatcherTest,testSaveLoad){
 
     ptree writeTo;
-    VidPidMatcher matcher;
+    EvdevMatcher matcher;
 
-    matcher.setWild(VidPidMatcher::VID,"99ac");
-    matcher.setWild(VidPidMatcher::PID,"720b");
+    matcher.setWild(EvdevMatcher::VID,"99ac");
+    matcher.setWild(EvdevMatcher::PID,"720b");
 
     DeviceMatcher::write(matcher,writeTo);
 
     DeviceMatcher *readBack=DeviceMatcher::read(writeTo);
 
-    VidPidMatcher *cast=static_cast<VidPidMatcher*>(readBack);
+    EvdevMatcher *cast=static_cast<EvdevMatcher*>(readBack);
 
     ASSERT_TRUE(*cast==matcher);
 }

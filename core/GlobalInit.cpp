@@ -5,8 +5,7 @@
 #include "MultiMatcher.hpp"
 
 #ifdef __linux
-    #include "linux/HubPortMatcher.hpp"
-    #include "linux/VidPidMatcher.hpp"
+    #include "linux/EvdevMatcher.hpp"
 #elif __WIN32
 
 #endif
@@ -34,8 +33,7 @@ bool globalInit(){
     DeviceMatcher::registerSubType<MultiMatcher>();
 
 #ifdef __linux
-    DeviceMatcher::registerSubType<HubPortMatcher>();
-    DeviceMatcher::registerSubType<VidPidMatcher>();
+    DeviceMatcher::registerSubType<EvdevMatcher>();
 #elif __WIN32
 
 #endif

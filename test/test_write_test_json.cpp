@@ -3,17 +3,17 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 
-#include "linux/VidPidMatcher.hpp"
+#include "linux/EvdevMatcher.hpp"
 
 int main(int argc, char *argv[])
 {
 
     Profile profile;
 
-    VidPidMatcher *matcher=new VidPidMatcher;
+    EvdevMatcher *matcher=new EvdevMatcher;
 
-    matcher->setWild(VidPidMatcher::VID,"0433");
-    matcher->setWild(VidPidMatcher::PID,"0004");
+    matcher->setWild(EvdevMatcher::VID,"0433");
+    matcher->setWild(EvdevMatcher::PID,"0004");
 
     profile.setMatcher(matcher);
 
