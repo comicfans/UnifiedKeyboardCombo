@@ -42,7 +42,7 @@ public:
 
     Profile(const Profile& rhs);
 
-    Profile& operator==(const Profile& rhs);
+    Profile& operator=(const Profile& rhs);
 
     const string& name()const{return m_name;}
 

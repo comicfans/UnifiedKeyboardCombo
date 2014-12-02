@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
     vector<Profile> list;
 
     list.push_back(profile);
+    list.push_back(profile);
 
     ptree root;
 

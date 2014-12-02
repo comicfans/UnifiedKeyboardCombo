@@ -12,14 +12,17 @@ Profile::Profile(){
 
 Profile::Profile(const Profile& rhs){
 
-    operator==(rhs);
+    operator=(rhs);
 }
 
-Profile& Profile::operator==(const Profile& rhs){
+Profile& Profile::operator=(const Profile& rhs){
 
     m_matcher.reset(rhs.m_matcher->deepClone());
 
     m_keyMaps=rhs.m_keyMaps;
+
+    m_disableUnmappedKey=rhs.m_disableUnmappedKey;
+    m_disableNonKeyEvent=rhs.m_disableNonKeyEvent;
 
     return *this;
 }

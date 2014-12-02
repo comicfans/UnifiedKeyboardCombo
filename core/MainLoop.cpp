@@ -82,14 +82,14 @@ void MainLoop::enterLoop(){
         ++it;
     }
 
+    epoll_event allPollEvents[m_currentDevices.size()];
 
     while(true){
 
-        epoll_event oneEpollEvent;
 
         ukc_log(TRACE,"begin epoll on all input fds","");
 
-        int rc=epoll_wait(epollFd,&oneEpollEvent,1,-1);
+        int rc=epoll_wait(epollFd,allPollEvents,m_currentDevices.size(),-1);
 
         ukc_log(TRACE,"epoll return ",rc);
 
@@ -98,27 +98,33 @@ void MainLoop::enterLoop(){
             break;
         }
 
-        InputDevice *inputDevice=reinterpret_cast<InputDevice*>(
-                oneEpollEvent.data.ptr);
+        for(int i=0;i<rc;++i){
 
-        bool thisOk=inputDevice->processEvent();
+            InputDevice *inputDevice=reinterpret_cast<InputDevice*>(
+                    allPollEvents[i].data.ptr);
 
-        if (thisOk){
-        
-            continue;
+            ukc_log(TRACE,"process event of ",inputDevice->name().c_str());
+
+            bool thisOk=inputDevice->processEvent();
+
+            if (thisOk){
+
+                continue;
+            }
+
+            ukc_log(ERROR,inputDevice->name()," process event failed, remove it");
+
+            //last argument should not be NULL with kernel 2.6.9
+            //I think this can be ignored
+            epoll_ctl(epollFd,EPOLL_CTL_DEL,inputDevice->evdevFd(),NULL);
+
+            m_currentDevices.erase(m_currentDevices.find(*inputDevice));
         }
-
-        ukc_log(ERROR,inputDevice->name()," process event failed, remove it");
-
-        //last argument should not be NULL with kernel 2.6.9
-        //I think this can be ignored
-        epoll_ctl(epollFd,EPOLL_CTL_DEL,inputDevice->evdevFd(),NULL);
-
-        m_currentDevices.erase(m_currentDevices.find(*inputDevice));
 
         if (m_currentDevices.empty()){
             break;
         }
+
     }
 
     for(auto & dev:m_currentDevices){
@@ -145,8 +151,11 @@ MainLoop::MainLoop(){
 
         m_profiles=Profile::readList(readTree);
 
+        ukc_log(INFO,"read config profiles number :",m_profiles.size());
+
     }catch(boost::property_tree::json_parser_error &t){
 
+        ukc_log(ERROR,t.message().c_str(),t.line());
         //do nothing
     }
 
@@ -208,6 +217,12 @@ void MainLoop::start(){
     std::lock_guard<std::mutex> locker(m_startMutex);
 
     configure();
+
+    if (m_currentDevices.empty()){
+        //TODO use pipe poll to do main loop
+        ukc_log(ERROR,"no matching devices","");
+        return;
+    }
 
     enterLoop();
 
