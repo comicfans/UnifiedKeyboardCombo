@@ -18,17 +18,19 @@ enum LogLevel{TRACE,DEBUG,INFO,ERROR};
 
 void setLogLevel(LogLevel level);
 
-void log(LogLevel level,const char *message);
+void ukc_log(LogLevel level,const char *message);
 
-void log(LogLevel level,const string& message);
+void ukc_log(LogLevel level,const string& message);
 
-void log(LogLevel level,const char *message,int arg0,int arg1);
+void ukc_log(LogLevel level,const char *message,int arg0,int arg1);
 
-void log(LogLevel level,const char *message,const char* arg0="",const char* arg1="");
+void ukc_log(LogLevel level,const char *message,int arg0);
 
-void log(LogLevel level,const string& message,const char *arg0="",const char* arg1="");
+void ukc_log(LogLevel level,const char *message,const char* arg0="",const char* arg1="");
 
-void log(LogLevel level,const char *message ,input_event *evdev_event);
+void ukc_log(LogLevel level,const string& message,const char *arg0="",const char* arg1="");
+
+void ukc_log(LogLevel level,const char *message ,input_event *evdev_event);
 
 #endif /* end of include guard: UTILITY_HPP_GQB8XJXS */
 

@@ -26,13 +26,10 @@
 #include <atomic>
 #include <mutex>
 #include <memory>
-#include <unordered_map>
+#include <boost/ptr_container/ptr_unordered_set.hpp>
 
 
 using std::mutex;
-using std::unique_ptr;
-
-using std::unordered_map;
 
 class MainLoop
 {
@@ -69,11 +66,16 @@ private:
 
     vector<Profile> m_profiles;
 
-    struct Deleter{
-        void operator()(InputDevice *p);
+
+    struct Hasher:public std::unary_function<InputDevice,std::size_t>{
+        std::size_t operator()(const InputDevice& value)const;
     };
 
-    vector<unique_ptr<InputDevice>> m_currentDevices;
+    struct Equaler:public std::binary_function<InputDevice,InputDevice,bool>{
+        bool operator()(const InputDevice &lhs,const InputDevice &rhs)const;
+    };
+
+    boost::ptr_unordered_set<InputDevice,Hasher,Equaler> m_currentDevices;
 };
 
 

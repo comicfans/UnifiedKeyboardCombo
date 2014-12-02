@@ -86,51 +86,58 @@ bool simpleWildMatch(const string& toTest,const string & wild){
     return true;
 }
 
-static LogLevel logLevel=TRACE;
+static LogLevel ukc_logLevel=TRACE;
 
 void setLogLevel(LogLevel level){
-    logLevel=level;
+    ukc_logLevel=level;
 }
 
 static const char * const LOG_LEVEL_STRING[4]={"[TRACE]","[DEBUG]","[INFO]","[ERROR]"};
 
-void log(LogLevel level,const char *message){
+void ukc_log(LogLevel level,const char *message){
 
-    if (level>=logLevel) {
+    if (level>=ukc_logLevel) {
         std::cout<<message<<'\n';
     }
 }
 
-void log(LogLevel level,const string& message){
+void ukc_log(LogLevel level,const string& message){
 
-    if (level>=logLevel) {
+    if (level>=ukc_logLevel) {
         std::cout<<message<<'\n';
     }
 }
 
-void log(LogLevel level,const char *message,int arg0,int arg1){
+void ukc_log(LogLevel level,const char *message,int arg0){
 
-    if (level>=logLevel) {
+    if (level>=ukc_logLevel) {
+        std::cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<'\n';
+    }
+}
+
+void ukc_log(LogLevel level,const char *message,int arg0,int arg1){
+
+    if (level>=ukc_logLevel) {
         std::cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
     }
 }
 
-void log(LogLevel level,const char *message,const char* arg0,const char* arg1){
+void ukc_log(LogLevel level,const char *message,const char* arg0,const char* arg1){
 
-    if (level>=logLevel) {
+    if (level>=ukc_logLevel) {
         std::cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
     }
 }
 
-void log(LogLevel level,const string& message,const char* arg0,const char* arg1){
+void ukc_log(LogLevel level,const string& message,const char* arg0,const char* arg1){
 
-    if (level>=logLevel) {
+    if (level>=ukc_logLevel) {
         std::cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
     }
 }
 
-void log(LogLevel level,const char *message ,input_event *evdev_event){
-    if (level>=logLevel) {
+void ukc_log(LogLevel level,const char *message ,input_event *evdev_event){
+    if (level>=ukc_logLevel) {
         std::cout<<LOG_LEVEL_STRING[level]<<message<<
             libevdev_event_type_get_name(evdev_event->type)
             <<" "<<libevdev_event_code_get_name(evdev_event->type,evdev_event->code)            <<" value :"<<evdev_event->value<<'\n';

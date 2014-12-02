@@ -46,6 +46,8 @@ public:
 
     ~EvdevInputDevice();
 
+    int evdevFd()const {return m_evdevFd;}
+
 private:
 
     EvdevInputDevice(const char * filename);

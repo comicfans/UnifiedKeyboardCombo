@@ -24,6 +24,8 @@
 #include "DeviceMatcher.hpp"
 #include "Utility.hpp"
 
+#include <sys/epoll.h>
+
 using std::lock_guard;
 
 typedef lock_guard<mutex> ScopeLock;
@@ -56,43 +58,74 @@ void MainLoop::addProfile(const Profile& profile){
 
 void MainLoop::enterLoop(){
 
-    while(!m_quit){
+    int epollFd=epoll_create1(0);
 
-        if(m_profileChanged){
-            log(INFO,"profile changed ,reconfig","");
+    if(epollFd==-1){
+        ukc_log(ERROR,"create epoll fd failed","");
+        return;
+    }
 
-            ScopeLock locker(m_profileMutex);
-            configure();
+    for(auto it=m_currentDevices.begin(),end=m_currentDevices.end();
+            it!=end;){
+
+        auto &device=*it;
+
+        epoll_event ev;
+        ev.events=EPOLLIN;
+        ev.data.ptr=&device;
+
+        if(epoll_ctl(epollFd,EPOLL_CTL_ADD,device.evdevFd(),&ev)==-1){
+            ukc_log(ERROR,"can not mod poll ev for ",device.name().c_str());
+            it=m_currentDevices.erase(it);
+            continue;
+        }
+        ++it;
+    }
+
+
+    while(true){
+
+        epoll_event oneEpollEvent;
+
+        ukc_log(TRACE,"begin epoll on all input fds","");
+
+        int rc=epoll_wait(epollFd,&oneEpollEvent,1,-1);
+
+        ukc_log(TRACE,"epoll return ",rc);
+
+        if (rc==-1){
+            ukc_log(ERROR,"wait error:",errno);
+            break;
         }
 
-    
-        vector<InputDevice*> failedOnes;
-        for(auto &device:m_currentDevices){
-            bool thisOk=device->processEvent();
+        InputDevice *inputDevice=reinterpret_cast<InputDevice*>(
+                oneEpollEvent.data.ptr);
 
-            if (!thisOk){
-                log(ERROR,device->name()," process event failed, remove it");
-                failedOnes.push_back(device.get());
-            }
-        }
+        bool thisOk=inputDevice->processEvent();
 
-        if (failedOnes.empty()){
+        if (thisOk){
+        
             continue;
         }
 
-        int index=0;
-        auto newEnd=m_currentDevices.end();
-        for(InputDevice *failed:failedOnes){
-            do{
-                if(m_currentDevices[index].get()==failed){
-                    newEnd=m_currentDevices.erase(m_currentDevices.begin()+index);
-                    break;
-                }
-            }while(++index);
-        }
+        ukc_log(ERROR,inputDevice->name()," process event failed, remove it");
 
-        m_currentDevices.resize(newEnd-m_currentDevices.begin());
+        //last argument should not be NULL with kernel 2.6.9
+        //I think this can be ignored
+        epoll_ctl(epollFd,EPOLL_CTL_DEL,inputDevice->evdevFd(),NULL);
+
+        m_currentDevices.erase(m_currentDevices.find(*inputDevice));
+
+        if (m_currentDevices.empty()){
+            break;
+        }
     }
+
+    for(auto & dev:m_currentDevices){
+        epoll_ctl(epollFd,EPOLL_CTL_DEL,dev.evdevFd(),NULL);
+    }
+
+    close(epollFd);
 
     m_currentDevices.clear();
 
@@ -138,7 +171,7 @@ void MainLoop::configure(){
             //if match one profile ,just use it.
             if(profile.matcher().matchDevice(*inputDevice)){
 
-                log(DEBUG,"profile match device:",profile.name().c_str(),inputDevice->name().c_str());
+                ukc_log(DEBUG,"profile match device:",profile.name().c_str(),inputDevice->name().c_str());
 
                 bool configureOk=inputDevice->configure(profile.keyMaps(),
                         profile.disableNonKeyEvent(),
@@ -147,11 +180,11 @@ void MainLoop::configure(){
 
                 if(configureOk){
                 
-                    log(DEBUG,inputDevice->name(),"configure ok");
-                    m_currentDevices.push_back(std::move(inputDevice));
+                    ukc_log(DEBUG,inputDevice->name(),"configure ok");
+                    m_currentDevices.insert(inputDevice.release());
                 }   else{
 
-                    log(ERROR,inputDevice->name(),"configure failed");
+                    ukc_log(ERROR,inputDevice->name(),"configure failed");
                 }
                 break;
 
@@ -160,9 +193,9 @@ void MainLoop::configure(){
     }
 
     if (!m_currentDevices.empty()) {
-        log(DEBUG,"matched devices list:","");
+        ukc_log(DEBUG,"matched devices list:","");
         for(auto &dev:m_currentDevices){
-            log(DEBUG,dev->description(),"");
+            ukc_log(DEBUG,dev.description(),"");
         }
     }
     
@@ -178,5 +211,16 @@ void MainLoop::start(){
 
     enterLoop();
 
+}
+
+        
+std::size_t MainLoop::Hasher::operator()(const InputDevice& value)const{
+    boost::hash<const void*> hasher;
+    return hasher(&value);
+}
+
+        
+bool MainLoop::Equaler::operator()(const InputDevice &lhs,const InputDevice &rhs)const{
+    return &lhs==&rhs;
 }
 
