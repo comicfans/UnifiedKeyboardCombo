@@ -49,13 +49,15 @@ public:
 
 private:
 
-    void configure();
+    bool configureAddIfMatch(unique_ptr<InputDevice> one);
+
+    void configureAll();
+
+    void reloadConfig();
 
     bool m_quit=false;
 
-    MainLoop();
-
-    ~MainLoop();
+    MainLoop()=default;
 
     void enterLoop();
 
@@ -63,9 +65,20 @@ private:
 
     boost::ptr_unordered_map<int,InputDevice> m_currentDevices;
 
-    void processSignals(const signalfd_siginfo& sigInfo);
+    void createInotifyFd();
+
+    void processSignal();
 
     void processInotify();
+
+    int m_epollFd=-1;
+
+    int m_inotifyFd=-1;
+
+    int m_signalFd=-1;
+
+    enum WatchIndex{WATCH_INPUT,WATCH_CONFIG,WATCH_PWD};
+    int m_watch[3]={-1,-1,-1};
 
 };
 

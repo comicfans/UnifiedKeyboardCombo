@@ -33,6 +33,8 @@ using std::unique_ptr;
 
 using boost::property_tree::ptree;
 
+static constexpr const char * const DEFAULT_CONFIG_JSON="ukc.json";
+
 class DeviceMatcher;
 class Profile
 {

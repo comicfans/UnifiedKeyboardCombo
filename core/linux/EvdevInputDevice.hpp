@@ -14,7 +14,7 @@ using std::vector;
 struct libevdev;
 struct libevdev_uinput;
 
-static constexpr const char * const EVENT_INPUT_PATH="/dev/input";
+static constexpr const char * const EVENT_INPUT_PATH="/dev/input/";
 
 class EvdevInputDevice 
 {
@@ -47,6 +47,10 @@ public:
     ~EvdevInputDevice();
 
     int evdevFd()const {return m_evdevFd;}
+
+    static EvdevInputDevice * tryCreateNew(const char * name);
+
+    bool registerPoll(int epollFd);
 
 private:
 
@@ -92,6 +96,8 @@ private:
      * @brief if support other events ,create shadow uinput to passthrough
      * */
     libevdev_uinput *m_uinputDev = nullptr;
+
+    int m_epollFd=-1;
 
 };
 

@@ -39,7 +39,7 @@ void UinputKeyboard::postKeyEvent(unsigned int keyCode,int value){
 
     libevdev_uinput_write_event(m_uinputDev,EV_KEY,keyCode,value);
 
-    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,NULL);
+    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,0);
 }
 
 UinputKeyboard::~UinputKeyboard(){

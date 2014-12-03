@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <cstring>
 #include <unistd.h>
+#include <sys/epoll.h>
 
 #include <unordered_map>
 #include <boost/assert.hpp>
@@ -159,7 +160,7 @@ EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 		char fname[64];
 
 		snprintf(fname, sizeof(fname),
-			 "%s/%s", EVENT_INPUT_PATH, namelist[i]->d_name);
+			 "%s%s", EVENT_INPUT_PATH, namelist[i]->d_name);
 
     
         auto thisOne = unique_ptr<EvdevInputDevice>(
@@ -358,6 +359,38 @@ EvdevInputDevice::~EvdevInputDevice(){
         
     if (m_evdevFd>=0) {
         close(m_evdevFd);
+
+        if (m_epollFd>=0){
+            epoll_ctl(m_epollFd,EPOLL_CTL_DEL,m_evdevFd,NULL);
+        }
     }
 }
 
+bool EvdevInputDevice::registerPoll(int epollFd){
+
+    BOOST_ASSERT(m_epollFd==-1);
+    BOOST_ASSERT(m_evdevFd!=-1);
+
+    m_epollFd=epollFd;
+
+    epoll_event ev;
+    ev.events=EPOLLIN;
+    ev.data.fd=m_evdevFd;
+    int rc= epoll_ctl(m_epollFd,EPOLL_CTL_ADD,m_evdevFd,&ev);
+
+    if (rc==-1){
+        ukc_log(ERROR,"can not add poll ev for ",m_name.c_str());
+        return false;
+    }
+    return true;
+}
+
+    
+EvdevInputDevice * EvdevInputDevice::tryCreateNew(const char * name){
+
+            
+    auto ret=new EvdevInputDevice(name);
+
+    return ret->m_evdevFd>0?ret:nullptr;
+
+}

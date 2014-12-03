@@ -1,4 +1,3 @@
-
 find_package(Evdev REQUIRED)
 
 include_directories(${EVDEV_INCLUDE_DIR})
