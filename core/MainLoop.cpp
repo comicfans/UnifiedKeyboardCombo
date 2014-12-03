@@ -26,35 +26,55 @@
 
 #include <sys/epoll.h>
 #include <sys/signalfd.h>
+#include <signal.h>
 
-using std::lock_guard;
+#include <sys/inotify.h>
 
-typedef lock_guard<mutex> ScopeLock;
+static int
+createInotifyFd()
+{
+  int i;
+  int inotify_fd;
 
-void MainLoop::addProfile(const Profile& profile){
+  /* Create new inotify device */
+  if ((inotify_fd = inotify_init1 (O_NONBLOCK)) < 0){
+      ukc_log(ERROR,"can not create inotify",inotify_fd);
+      return -1;
+  }
 
+  if (inotify_add_watch (inotify_fd,EVENT_INPUT_PATH,IN_CREATE) < 0){
+      ukc_log(ERROR,"can not create inotify",inotify_fd);
+      return -1;
+  }
 
-    {
+  return inotify_fd;
+}
 
-        bool started=!m_startMutex.try_lock();
+static int
+createSignalFd()
+{
+    int signal_fd;
+    sigset_t sigmask;
 
-        //not started
-        if(!started){
-            m_profiles.push_back(profile);
-            m_startMutex.unlock();
-            return;
-        }
+    /* We want to handle SIGINT and SIGTERM in the signal_fd, so we block them. */
+    sigemptyset (&sigmask);
+    sigaddset (&sigmask, SIGINT);
+    sigaddset (&sigmask, SIGTERM);
+
+    if (sigprocmask (SIG_BLOCK, &sigmask, NULL) < 0){
+
+        ukc_log(ERROR,"can not block signals ","");
+        return -1;
     }
 
-    // already started 
-    //
+    /* Get new FD to read signals from it */
+    if ((signal_fd = signalfd (-1, &sigmask, 0)) < 0)
+    {
+        ukc_log(ERROR,"can not create signal fd","");
+        return -1;
+    }
 
-    ScopeLock locker(m_profileMutex);
-
-    m_profileChanged=true;
-
-    m_profiles.push_back(profile);
-
+    return signal_fd;
 }
 
 void MainLoop::enterLoop(){
@@ -66,24 +86,42 @@ void MainLoop::enterLoop(){
         return;
     }
 
+        
+    epoll_event ev;
     for(auto it=m_currentDevices.begin(),end=m_currentDevices.end();
             it!=end;){
 
-        auto &device=*it;
+        auto &device=it->second;
 
-        epoll_event ev;
         ev.events=EPOLLIN;
-        ev.data.ptr=&device;
+        ev.data.fd=device->evdevFd();
 
-        if(epoll_ctl(epollFd,EPOLL_CTL_ADD,device.evdevFd(),&ev)==-1){
-            ukc_log(ERROR,"can not mod poll ev for ",device.name().c_str());
+        if(epoll_ctl(epollFd,EPOLL_CTL_ADD,device->evdevFd(),&ev)==-1){
+            ukc_log(ERROR,"can not add poll ev for ",device->name().c_str());
             it=m_currentDevices.erase(it);
             continue;
         }
         ++it;
     }
 
-    epoll_event allPollEvents[m_currentDevices.size()];
+    //hanlde signal in main loop , use signal to trigger reconfigure
+    int signalFd=createSignalFd();
+
+    ev.events=EPOLLIN;
+    ev.data.fd=signalFd;
+    if(epoll_ctl(epollFd,EPOLL_CTL_ADD,signalFd,&ev)==-1){
+        ukc_log(ERROR,"can not add poll for signal","");
+    }
+
+    int inotifyFd=createInotifyFd();
+
+    ev.events=EPOLLIN;
+    ev.data.fd=signalFd;
+    if(epoll_ctl(epollFd,EPOLL_CTL_ADD,signalFd,&ev)==-1){
+        ukc_log(ERROR,"can not add poll for signal","");
+    }
+
+    epoll_event allPollEvents[m_currentDevices.size()+2];
 
     while(true){
 
@@ -101,25 +139,40 @@ void MainLoop::enterLoop(){
 
         for(int i=0;i<rc;++i){
 
-            InputDevice *inputDevice=reinterpret_cast<InputDevice*>(
-                    allPollEvents[i].data.ptr);
+            int fd=allPollEvents[i].data.fd;
 
-            ukc_log(TRACE,"process event of ",inputDevice->name().c_str());
+            auto it=m_currentDevices.find(fd);
+            if(it!=m_currentDevices.end()){
+                InputDevice *inputDevice=reinterpret_cast<InputDevice*>(
+                        allPollEvents[i].data.ptr);
 
-            bool thisOk=inputDevice->processEvent();
+                ukc_log(TRACE,"process event of ",inputDevice->name().c_str());
 
-            if (thisOk){
+                bool thisOk=inputDevice->processEvent();
 
-                continue;
+                if (thisOk){
+
+                    continue;
+                }
+
+                ukc_log(ERROR,inputDevice->name()," process event failed, remove it");
+
+                //last argument should not be NULL with kernel 2.6.9
+                //I think this can be ignored
+                epoll_ctl(epollFd,EPOLL_CTL_DEL,inputDevice->evdevFd(),NULL);
+
+                m_currentDevices.erase(it);
             }
 
-            ukc_log(ERROR,inputDevice->name()," process event failed, remove it");
+            if(fd==signalFd){
+               
 
-            //last argument should not be NULL with kernel 2.6.9
-            //I think this can be ignored
-            epoll_ctl(epollFd,EPOLL_CTL_DEL,inputDevice->evdevFd(),NULL);
+                //process signal
+            }else if(fd==inotifyFd){
+                //process inotify
 
-            m_currentDevices.erase(m_currentDevices.find(*inputDevice));
+            }
+            
         }
 
         if (m_currentDevices.empty()){
@@ -128,11 +181,16 @@ void MainLoop::enterLoop(){
 
     }
 
-    for(auto & dev:m_currentDevices){
-        epoll_ctl(epollFd,EPOLL_CTL_DEL,dev.evdevFd(),NULL);
-    }
 
     close(epollFd);
+
+    if (signalFd!=-1)    {
+        close(signalFd);
+    }
+
+    if(inotifyFd!=-1){
+        close(inotifyFd);
+    }
 
     m_currentDevices.clear();
 
@@ -140,75 +198,7 @@ void MainLoop::enterLoop(){
 
 static const string DEFAULT_CONFIG_JSON="ukc.json";
 
-static int
-createInotifyFd()
-{
-  int i;
-  int inotify_fd;
 
-  /* Create new inotify device */
-  if ((inotify_fd = inotify_init ()) < 0)
-    {
-      fprintf (stderr,
-               "Couldn't setup new inotify device: '%s'\n",
-               strerror (errno));
-      return -1;
-    }
-
-  /* Allocate array of monitor setups */
-  n_monitors = argc - 1;
-  monitors = malloc (n_monitors * sizeof (monitored_t));
-
-  /* Loop all input directories, setting up watches */
-  for (i = 0; i < n_monitors; ++i)
-    {
-      monitors[i].path = strdup (argv[i + 1]);
-      if ((monitors[i].wd = inotify_add_watch (inotify_fd,
-                                               monitors[i].path,
-                                               event_mask)) < 0)
-        {
-          fprintf (stderr,
-                   "Couldn't add monitor in directory '%s': '%s'\n",
-                   monitors[i].path,
-                   strerror (errno));
-          exit (EXIT_FAILURE);
-        }
-      printf ("Started monitoring directory '%s'...\n",
-              monitors[i].path);
-    }
-
-  return inotify_fd;
-}
-static int
-createSignalFd()
-{
-  int signal_fd;
-  sigset_t sigmask;
-
-  /* We want to handle SIGINT and SIGTERM in the signal_fd, so we block them. */
-  sigemptyset (&sigmask);
-  sigaddset (&sigmask, SIGINT);
-  sigaddset (&sigmask, SIGTERM);
-
-  if (sigprocmask (SIG_BLOCK, &sigmask, NULL) < 0)
-    {
-      fprintf (stderr,
-               "Couldn't block signals: '%s'\n",
-               strerror (errno));
-      return -1;
-    }
-
-  /* Get new FD to read signals from it */
-  if ((signal_fd = signalfd (-1, &sigmask, 0)) < 0)
-    {
-      fprintf (stderr,
-               "Couldn't setup signal FD: '%s'\n",
-               strerror (errno));
-      return -1;
-    }
-
-  return signal_fd;
-}
 MainLoop::MainLoop(){
 
     //reade default config
@@ -273,18 +263,15 @@ void MainLoop::configure(){
 
     if (!m_currentDevices.empty()) {
         ukc_log(DEBUG,"matched devices list:","");
-        for(auto &dev:m_currentDevices){
-            ukc_log(DEBUG,dev.description(),"");
+        for(const auto &dev:m_currentDevices){
+            ukc_log(DEBUG,dev.second->description(),"");
         }
     }
     
 
-    m_profileChanged=false;
 }
 
 void MainLoop::start(){
-
-    std::lock_guard<std::mutex> locker(m_startMutex);
 
     configure();
 
@@ -298,14 +285,28 @@ void MainLoop::start(){
 
 }
 
-        
-std::size_t MainLoop::Hasher::operator()(const InputDevice& value)const{
-    boost::hash<const void*> hasher;
-    return hasher(&value);
-}
 
-        
-bool MainLoop::Equaler::operator()(const InputDevice &lhs,const InputDevice &rhs)const{
-    return &lhs==&rhs;
-}
+void MainLoop::processSignal(){
+ struct signalfd_siginfo fdsi;
 
+                bool firstRead=true;
+                bool ok=false;
+                while(true){
+
+                    int readNumber=read (signalFd,&fdsi,sizeof (fdsi));
+                    if(firstRead && (readNumber!=sizeof(fdsi))){
+                        break;
+                    }
+                    firstRead=false;
+
+                    if(readNumber==0){
+                        ok=true;
+                        break;
+                    }
+                }
+
+                if(!ok){
+
+                    //signal process failed
+                }
+}

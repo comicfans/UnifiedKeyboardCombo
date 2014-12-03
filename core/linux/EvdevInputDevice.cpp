@@ -77,7 +77,6 @@ string EvdevInputDevice::description()const{
         ", Physical:"+m_physical;
 }
 
-static const char *DEV_INPUT_EVENT="/dev/input";
 
 static const char *EVENT_DEV_NAME="event";
 
@@ -151,7 +150,7 @@ EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 	int i, ndev, devnum;
 	char *filename;
 
-	ndev = scandir(DEV_INPUT_EVENT, &namelist, is_event_device, versionsort);
+	ndev = scandir(EVENT_INPUT_PATH, &namelist, is_event_device, versionsort);
 	if (ndev <= 0)
 		return ret;
 
@@ -160,7 +159,7 @@ EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 		char fname[64];
 
 		snprintf(fname, sizeof(fname),
-			 "%s/%s", DEV_INPUT_EVENT, namelist[i]->d_name);
+			 "%s/%s", EVENT_INPUT_PATH, namelist[i]->d_name);
 
     
         auto thisOne = unique_ptr<EvdevInputDevice>(

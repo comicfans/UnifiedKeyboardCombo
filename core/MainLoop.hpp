@@ -23,13 +23,12 @@
 
 #include "PlatformDef.hpp"
 
-#include <atomic>
-#include <mutex>
 #include <memory>
-#include <boost/ptr_container/ptr_unordered_set.hpp>
+#include <boost/ptr_container/ptr_unordered_map.hpp>
 
 
-using std::mutex;
+                
+struct signalfd_siginfo;
 
 class MainLoop
 {
@@ -52,30 +51,22 @@ private:
 
     void configure();
 
-    mutex m_startMutex;
-
-    mutex m_profileMutex;
-
-    bool m_profileChanged=true;
-
     bool m_quit=false;
 
     MainLoop();
+
+    ~MainLoop();
 
     void enterLoop();
 
     vector<Profile> m_profiles;
 
+    boost::ptr_unordered_map<int,InputDevice> m_currentDevices;
 
-    struct Hasher:public std::unary_function<InputDevice,std::size_t>{
-        std::size_t operator()(const InputDevice& value)const;
-    };
+    void processSignals(const signalfd_siginfo& sigInfo);
 
-    struct Equaler:public std::binary_function<InputDevice,InputDevice,bool>{
-        bool operator()(const InputDevice &lhs,const InputDevice &rhs)const;
-    };
+    void processInotify();
 
-    boost::ptr_unordered_set<InputDevice,Hasher,Equaler> m_currentDevices;
 };
 
 

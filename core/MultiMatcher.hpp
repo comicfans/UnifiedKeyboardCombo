@@ -27,8 +27,6 @@
 #include <boost/ptr_container/ptr_unordered_set.hpp>
 
 
-std::size_t hash(const DeviceMatcher& value);
-
 class MultiMatcher :public DeviceMatcher
 {
 

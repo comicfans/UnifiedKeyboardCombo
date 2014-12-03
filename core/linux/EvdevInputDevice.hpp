@@ -14,6 +14,8 @@ using std::vector;
 struct libevdev;
 struct libevdev_uinput;
 
+static constexpr const char * const EVENT_INPUT_PATH="/dev/input";
+
 class EvdevInputDevice 
 {
 public:
