@@ -28,7 +28,7 @@
 
 
                 
-struct signalfd_siginfo;
+struct inotify_event;
 
 class MainLoop
 {
@@ -53,9 +53,15 @@ private:
 
     void configureAll();
 
-    void reloadConfig();
+    void reloadConfig(bool createWatch);
 
     void pollAll();
+
+    void processConfigChange(const inotify_event* event);
+
+    void createWatchConfig();
+
+    void createWatchCwd();
 
     bool m_quit=false;
 
@@ -79,7 +85,8 @@ private:
 
     int m_signalFd=-1;
 
-    enum WatchIndex{WATCH_INPUT,WATCH_CONFIG,WATCH_PWD};
+    //config/cwd only one will be active
+    enum WatchIndex{WATCH_INPUT,WATCH_CONFIG,WATCH_CWD};
     int m_watch[3]={-1,-1,-1};
 
 };

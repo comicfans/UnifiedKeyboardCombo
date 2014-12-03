@@ -14,8 +14,7 @@
 #include <sys/inotify.h>
 
 
-void MainLoop::createInotifyFd()
-{
+void MainLoop::createInotifyFd(){
   /* Create new inotify device */
   if ((m_inotifyFd = inotify_init1 (O_NONBLOCK)) < 0){
       ukc_log(ERROR,"can not create inotify",m_inotifyFd);
@@ -24,28 +23,10 @@ void MainLoop::createInotifyFd()
 
   if ((m_watch[WATCH_INPUT]=inotify_add_watch (
                   m_inotifyFd,EVENT_INPUT_PATH,IN_CREATE))< 0){
-      ukc_log(ERROR,"can not create inotify for ",EVENT_INPUT_PATH);
+      ukc_log(ERROR,"can not create inotify watch on ",
+              EVENT_INPUT_PATH);
+
   }
-
-  //watch 
-  if ((m_watch[WATCH_CONFIG]=inotify_add_watch (m_inotifyFd,
-                  DEFAULT_CONFIG_JSON,
-                  IN_CLOSE_WRITE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE_SELF))<0){
-
-      ukc_log(ERROR,"can not create inotify watch for ",DEFAULT_CONFIG_JSON);
-  }
-
-  //test
-  return; 
-
-  auto pwd=get_current_dir_name();
-
-  if((m_watch[WATCH_PWD]=inotify_add_watch(m_inotifyFd,pwd,IN_CREATE))<0){
-
-      ukc_log(ERROR,"can not create inotify watch for ",pwd);
-  }
-
-  free(pwd);
 
 }
 
@@ -102,6 +83,8 @@ void MainLoop::enterLoop(){
         return;
     }
 
+    
+
     pollAll();
         
     //hanlde signal in main loop , use signal to trigger reconfigure
@@ -116,13 +99,17 @@ void MainLoop::enterLoop(){
         }
     }
     
-
+    //delay inotify watch here to prevent too long 
+    //device scan leads many config change events
     createInotifyFd();
 
-    if (m_inotifyFd!=-1 && (m_watch[0]!=-1 || m_watch[1]!=-1)) {
+    createWatchConfig();
+
+    if (m_inotifyFd!=-1 && 
+            (m_watch[0]!=-1 || m_watch[1]!=-1 
+             || m_watch[2]!=-1)) {
 
         //at least one watch is ok
-
         ev.events=EPOLLIN;
         ev.data.fd=m_inotifyFd;
         if(epoll_ctl(m_epollFd,EPOLL_CTL_ADD,m_inotifyFd,&ev)==-1){
@@ -201,7 +188,7 @@ void MainLoop::enterLoop(){
 }
 
 
-void MainLoop::reloadConfig(){
+void MainLoop::reloadConfig(bool createWatch){
 
     m_profiles.clear();
 
@@ -216,12 +203,19 @@ void MainLoop::reloadConfig(){
 
         m_profiles=Profile::readList(readTree);
 
+        if (createWatch) {
+            createWatchConfig();
+        }
+
         ukc_log(INFO,"read config profiles number :",m_profiles.size());
 
     }catch(boost::property_tree::json_parser_error &t){
 
         ukc_log(ERROR,t.message().c_str(),t.line());
-        //do nothing
+
+        if(createWatch){
+            createWatchCwd();
+        }
     }
 }
 
@@ -289,7 +283,8 @@ void MainLoop::configureAll(){
 
 void MainLoop::start(){
 
-    reloadConfig();
+
+    reloadConfig(false);
 
     configureAll();
 
@@ -383,12 +378,10 @@ void MainLoop::processInotify(){
                 }
             }
 
-        }else if(event->wd==m_watch[WATCH_CONFIG]){
+        }else {
                 
-            ukc_log(DEBUG,"config file changed reconfig","");
-            reloadConfig();
-            configureAll();
-            pollAll();
+            processConfigChange(event);
+            
         }
 
 
@@ -406,5 +399,82 @@ void MainLoop::processInotify(){
             break;
         }
     }
+}
+
+void MainLoop::processConfigChange(const inotify_event * event){
+    if(event->wd==m_watch[WATCH_CONFIG]){
+        ukc_log(DEBUG,"config file changed reconfig","");
+        reloadConfig(false);
+        configureAll();
+        pollAll();
+
+        if((event->mask & IN_MOVE_SELF)||(event->mask & IN_DELETE_SELF)){
+
+            ukc_log(DEBUG,DEFAULT_CONFIG_JSON,"deleted or renamed");
+            int rc=inotify_rm_watch(m_inotifyFd,m_watch[WATCH_CONFIG]);
+            if (rc==-1){
+                ukc_log(ERROR,"remove watch for config file failed ",strerror(errno));
+            }
+            m_watch[WATCH_CONFIG]=-1;
+
+            createWatchCwd();
+        }
+        return;
+    }
+
+    if (event->wd==m_watch[WATCH_CWD]){
+
+        if(strcmp(event->name,DEFAULT_CONFIG_JSON)==0){
+
+            ukc_log(INFO,DEFAULT_CONFIG_JSON,"found in pwd");
+
+            //file created, or moved in
+            //first remove self watch
+            //
+            int rc=inotify_rm_watch(m_inotifyFd,m_watch[WATCH_CWD]);
+            if (rc==-1){
+                ukc_log(ERROR,"remove watch for cwd failed ",strerror(errno));
+            }
+
+            m_watch[WATCH_CWD]=-1;
+
+            //reload config will trigger add watch config
+            // if it falied, 
+            reloadConfig(true);
+            configureAll();
+            pollAll();
+        }
+    }
+
+}
+
+void MainLoop::createWatchConfig(){
+
+    ukc_log(DEBUG,"create watch on", DEFAULT_CONFIG_JSON);
+
+    if((m_watch[WATCH_CONFIG]=inotify_add_watch(m_inotifyFd,
+                    DEFAULT_CONFIG_JSON,
+                    IN_CLOSE_WRITE|IN_MODIFY|IN_DELETE_SELF
+                    |IN_MOVE_SELF))<0){
+        ukc_log(ERROR,"can not create inotify for config ,instead create watch pwd","");
+
+        createWatchCwd();
+    }
+
+}
+
+void MainLoop::createWatchCwd(){
+
+    auto pwd=get_current_dir_name();
+
+    ukc_log(DEBUG,"create watch on ",pwd);
+
+    if((m_watch[WATCH_CWD]=inotify_add_watch(m_inotifyFd,pwd,
+                    IN_CREATE|IN_MOVED_TO))<0){
+
+        ukc_log(ERROR,"can not create inotify watch for ",pwd);
+    }
+
+    free(pwd);
 }
 
