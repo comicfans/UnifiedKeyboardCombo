@@ -99,6 +99,7 @@ private:
 
     int m_epollFd=-1;
 
+    bool valid()const;
 };
 
 

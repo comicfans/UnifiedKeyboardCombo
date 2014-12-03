@@ -1,12 +1,15 @@
 #ifndef UINPUTKEYBOARD_HPP_36CC1JV9
 #define UINPUTKEYBOARD_HPP_36CC1JV9
 
-
 struct libevdev_uinput;
 
 class UinputKeyboard
 {
 public:
+
+    static constexpr const char * const VIRTUAL_DEVICE_PREFIX="UnifiedKeyboardCombo:";
+
+    static constexpr const char * const VIRTUAL_KEYBOARD_NAME="UnifiedKeyboardCombo:virtual keyboard";
 
     static UinputKeyboard &instance(){
         static UinputKeyboard s_instance;

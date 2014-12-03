@@ -11,7 +11,7 @@ UinputKeyboard::UinputKeyboard(){
 
     libevdev *evdev=libevdev_new();
 
-    libevdev_set_name(evdev, "UnifiedKeyboardCombo virtual keyboard");
+    libevdev_set_name(evdev, VIRTUAL_KEYBOARD_NAME);
 
     libevdev_enable_event_type(evdev, EV_KEY);
     libevdev_enable_event_type(evdev, EV_SYN);

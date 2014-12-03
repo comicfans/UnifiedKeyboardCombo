@@ -78,6 +78,21 @@ string EvdevInputDevice::description()const{
         ", Physical:"+m_physical;
 }
 
+bool EvdevInputDevice::valid()const{
+    if (m_evdevFd<0)    {
+        return false;
+    }
+
+    if(!m_evdev){
+        return false;
+    }
+
+    if(m_name.find(UinputKeyboard::VIRTUAL_DEVICE_PREFIX)!=string::npos){
+        return false;
+    }
+
+    return true;
+}
 
 static const char *EVENT_DEV_NAME="event";
 
@@ -168,8 +183,7 @@ EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 		
 		free(namelist[i]);
 
-        if(thisOne->m_evdev!=nullptr){
-
+        if(thisOne->valid()){
             ukc_log(INFO,thisOne->description()," created");
             ret.push_back(std::move(thisOne));
         }
@@ -333,7 +347,7 @@ bool EvdevInputDevice::grabAndPrepare(){
 
     ukc_log(INFO,"will create shadow input of ",m_name.c_str());
 
-    libevdev_set_name(m_evdev,("Non-Key event of "+m_name).c_str());
+    libevdev_set_name(m_evdev,(UinputKeyboard::VIRTUAL_DEVICE_PREFIX+m_name).c_str());
 
     rc=libevdev_uinput_create_from_device(m_evdev,
             LIBEVDEV_UINPUT_OPEN_MANAGED,&m_uinputDev);
@@ -389,8 +403,14 @@ bool EvdevInputDevice::registerPoll(int epollFd){
 EvdevInputDevice * EvdevInputDevice::tryCreateNew(const char * name){
 
             
-    auto ret=new EvdevInputDevice(name);
+    unique_ptr<EvdevInputDevice> ret(new EvdevInputDevice(name));
 
-    return ret->m_evdevFd>0?ret:nullptr;
+    if (ret->valid())
+    {
+        return ret.release();
+    }
 
+    ukc_log(DEBUG,"create evdev failed or this is UnifiedKeyboardCombo virtual keyboard","ignore");
+
+    return nullptr;
 }

@@ -7,6 +7,7 @@
 #include "Utility.hpp"
 
 #include <sys/epoll.h>
+#include <sys/ioctl.h>
 #include <sys/signalfd.h>
 #include <signal.h>
 
@@ -28,7 +29,8 @@ void MainLoop::createInotifyFd()
 
   //watch 
   if ((m_watch[WATCH_CONFIG]=inotify_add_watch (m_inotifyFd,
-                  DEFAULT_CONFIG_JSON,IN_CLOSE_WRITE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE_SELF))<0){
+                  DEFAULT_CONFIG_JSON,
+                  IN_CLOSE_WRITE|IN_DELETE_SELF|IN_MODIFY|IN_MOVE_SELF))<0){
 
       ukc_log(ERROR,"can not create inotify watch for ",DEFAULT_CONFIG_JSON);
   }
@@ -74,16 +76,7 @@ createSignalFd()
     return signal_fd;
 }
 
-void MainLoop::enterLoop(){
-
-    m_epollFd=epoll_create1(0);
-
-    if(m_epollFd==-1){
-        ukc_log(ERROR,"create epoll fd failed","");
-        return;
-    }
-
-        
+void MainLoop::pollAll(){
     epoll_event ev;
     for(auto it=m_currentDevices.begin(),end=m_currentDevices.end();
             it!=end;){
@@ -98,9 +91,23 @@ void MainLoop::enterLoop(){
         ++it;
     }
 
+}
+
+void MainLoop::enterLoop(){
+
+    m_epollFd=epoll_create1(0);
+
+    if(m_epollFd==-1){
+        ukc_log(ERROR,"create epoll fd failed","");
+        return;
+    }
+
+    pollAll();
+        
     //hanlde signal in main loop , use signal to trigger reconfigure
     m_signalFd=createSignalFd();
 
+    epoll_event ev;
     if (m_signalFd!=-1)    {
         ev.events=EPOLLIN;
         ev.data.fd=m_signalFd;
@@ -196,11 +203,14 @@ void MainLoop::enterLoop(){
 
 void MainLoop::reloadConfig(){
 
+    m_profiles.clear();
+
     //reade default config
 
     ptree readTree;
 
     try{
+        ukc_log(INFO,"try reading config file",DEFAULT_CONFIG_JSON);
     
         boost::property_tree::read_json(DEFAULT_CONFIG_JSON,readTree);
 
@@ -324,50 +334,38 @@ void MainLoop::processSignal(){
     }
 }
 
-#define IN_EVENT_DATA_LEN (sizeof(struct inotify_event))
-#define IN_EVENT_NEXT(event, length)            \
-  ((length) -= (event)->len,                    \
-   (struct inotify_event*)(((char *)(event)) +	\
-                           (event)->len))
-#define IN_EVENT_OK(event, length)                  \
-  ((long)(length) >= (long)IN_EVENT_DATA_LEN &&	    \
-   (long)(event)->len >= (long)IN_EVENT_DATA_LEN && \
-   (long)(event)->len <= (long)(length))
 
-
-	   
-static constexpr int MAX_INOTIFY_SIZE = sizeof(struct inotify_event) + NAME_MAX + 1;
+static constexpr int INOTIFY_EVENT_SIZE= sizeof(inotify_event);
 
 void MainLoop::processInotify(){
 
     ukc_log(INFO,"inotify received","");
 
-    char buffer[MAX_INOTIFY_SIZE*10];
+    unsigned int avail;
+    ioctl(m_inotifyFd, FIONREAD, &avail);
 
-    int readLength=read (m_inotifyFd,
-            buffer,
-            MAX_INOTIFY_SIZE);
+    char buffer[avail];
+    const int readLength=read(m_inotifyFd, buffer, avail);
 
+    
     if (readLength<=0){
 
         ukc_log(ERROR,"read inotify failed","");
         return;
     }
 
+    BOOST_ASSERT(readLength==avail);
 
     inotify_event *event = (inotify_event *)buffer;
 
-
-    while (IN_EVENT_OK (event, readLength))
+    //at least one
+    while (true)
     {
-
-        // create
-
-        ukc_log(INFO,"new device plugined",event->name);
 
         if (event->wd==m_watch[WATCH_INPUT] && 
             (strncmp(event->name,"event",5)==0)){
             //new input device created
+
             BOOST_ASSERT(event->mask & IN_CREATE);
 
             ukc_log(DEBUG,"new evdev node found ",event->name);
@@ -390,9 +388,23 @@ void MainLoop::processInotify(){
             ukc_log(DEBUG,"config file changed reconfig","");
             reloadConfig();
             configureAll();
+            pollAll();
         }
 
-        event = IN_EVENT_NEXT (event, readLength);
+
+        int thisSize=INOTIFY_EVENT_SIZE+event->len;
+
+        event=(inotify_event*)((char*)event+thisSize);
+
+        int leftBytes=buffer+readLength-(char*)event;
+
+        if(leftBytes<INOTIFY_EVENT_SIZE){
+            break;
+        }
+
+        if(leftBytes<INOTIFY_EVENT_SIZE+event->len){
+            break;
+        }
     }
 }
 

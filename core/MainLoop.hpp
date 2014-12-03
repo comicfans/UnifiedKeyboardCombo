@@ -55,6 +55,8 @@ private:
 
     void reloadConfig();
 
+    void pollAll();
+
     bool m_quit=false;
 
     MainLoop()=default;
