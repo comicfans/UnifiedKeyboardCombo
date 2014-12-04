@@ -31,10 +31,7 @@ EvdevInputDevice::EvdevInputDevice(string name,string vid,string pid,
 
 EvdevInputDevice::EvdevInputDevice(){
     m_keyMaps.reset(new uint16_t[KEY_CNT]);
-    for (int i = 0; i < KEY_CNT; ++i) {
-        //linux key map is dense map
-        m_keyMaps[i]=i;
-    }
+    
 }
   
 
@@ -199,6 +196,16 @@ EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 bool EvdevInputDevice::configure(const vector<KeyMap> & keyMaps,
         bool disableNonKeyEvent,bool disableUnmappedKey){
 
+    m_disableUnmappedKey=disableUnmappedKey;
+
+    if(m_disableUnmappedKey){
+        std::fill_n(m_keyMaps.get(),m_keyMaps.get()+KEY_CNT,KEY_RESERVED);
+    }else{
+        for (int i = 0; i < KEY_CNT; ++i) {
+            //linux key map is dense map
+            m_keyMaps[i]=i;
+        }
+    }
 
     for(auto &keyMap:keyMaps){
         ukc_log(TRACE,"map key ",keyMap.fromKey.c_str(),keyMap.toKey.c_str());
@@ -225,7 +232,6 @@ bool EvdevInputDevice::configure(const vector<KeyMap> & keyMaps,
     }
 
     m_disableNonKeyEvent=disableNonKeyEvent;
-    m_disableUnmappedKey=disableUnmappedKey;
 
     return grabAndPrepare();
 }
@@ -260,7 +266,7 @@ bool EvdevInputDevice::processEvent(){
                 int toKeyCode=m_keyMaps[ev.code];
 
                 //mapped key
-                if(toKeyCode!=ev.code){
+                if(toKeyCode!=KEY_RESERVED){
 
                     ev.code=toKeyCode;
                     ukc_log(TRACE,"map to key ",&ev);
