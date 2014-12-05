@@ -176,5 +176,47 @@ rethinking the keyboard:
 
 
 
+windows implementation:
+  at very beginning , I'm trying to implements core function as cross-platform,
+but after digging I found windows so much different from Linux. if want to 
+work as low level as in Linux, the only choice is a upperfilter driver.but 
+it's so complicated that I can't guess any meanings from even one line of MS 
+example code. I have to failback to windows hook ... but MS makes me crazy ...
+another time. 
+
+    you need to modify key message posted to other application,so must hook 
+
+    you can hook key message, but key message has no HW information--failed. 
+    rawinput API gives key message with HW information ,but can't be hooked... 
+
+    What The ? when combine them together in standalone app, you will even 
+find rawinput and key message are not stack based, means it's not possible to 
+avoid key event by drop rawinput ! these 2 event do take same keycode, but 
+there's no chain relationship between them.
+
+    some one at codeproject provide a workaround : use app to receive rawinput
+background ,use hook to preprocess key event, send it back to background app 
+to determine if it should be filtered, but it suffer from problem that 2 type
+messages reaching order not determineded (they comes from different thread 
+message queue) so sometimes you have to wait ... 
+
+    but in inspired by him, I created a improved version , firstly , hook on 
+WH_GETMESSAGE, so we can get all type message of target application including 
+rawinput and key, secondly, we register rawinput message in the hook, fakes 
+that target application will receive rawinput message. none-stack problem 
+still exits, but at least got stable message order (rawinput always before key)
+we assume that target application didn't use rawinput (if not ,out logic will 
+be too complicated) , we pre-process the rawinput message and filter it out ,
+so target application will not notify this changes .
+
+    for gui programming, windows predefined message queue and standard hook 
+seems more convient ,but for program like UnifiedKeyboardCombo ,Linux is 
+absolutely winner. per-device event is natural because you read per-device ,
+virtual input device creation and virtual event generation is just write some 
+bits to uinput, crazy simple!
+
+
+
 reference:
+
 
