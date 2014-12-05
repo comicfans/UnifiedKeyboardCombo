@@ -83,9 +83,24 @@ since it's move events passthrough the shadow device.
 background:
    as programmer, sometimes I'm hiting my keyboard 10 hours per day, makes my
 finger and showder uncomfortable very much. so I came to find a better kbd...
-first comes the machine keyboard, as I tried, they have very good finger depth
-and hiting feeling, but only a few considered ___ except some expensive ones.
-such as TEK from japan, or ___ . they 
+first comes the mechanical keyboard ,  they have good type feel but no one
+considered Ergonomic,  except ... some very expensive ones, for example “Truly 
+Ergonomic keyboard”/μTRON from Japan,Kinesis's Advantage/freestyle2, or Ergodox 
+I found their's "Ergonomic" design almost fall into two categories:
+
+    1. keys splited as 2 groups for hand separation , to resolve hand angle
+       issue (bending the wrist outward to the sides, or Ulnar deviation)
+
+    2. optimized key layout, reduces overall finger move distance. (consider 
+       ESC key in VIM, or ctrl/alt key in Emacs) , and  assign most used 
+       function key to thumb, 
+
+    last ,most expensive keyboards support hardware levl key mapping, you can 
+customize it as you wish. 
+
+   so here comes the ideal : why can't I combine two keyboards together to 
+make better typing  experience? software can do everthing I need ,why not 
+    
 
 reference:
 
