@@ -136,6 +136,8 @@ void ukc_log(LogLevel level,const string& message,const char* arg0,const char* a
     }
 }
 
+#ifdef __WIN32
+#elif defined __linux
 void ukc_log(LogLevel level,const char *message ,input_event *evdev_event){
     if (level>=ukc_logLevel) {
         std::cout<<LOG_LEVEL_STRING[level]<<message<<
@@ -143,3 +145,4 @@ void ukc_log(LogLevel level,const char *message ,input_event *evdev_event){
             <<" "<<libevdev_event_code_get_name(evdev_event->type,evdev_event->code)            <<" value :"<<evdev_event->value<<'\n';
     }
 }
+#endif

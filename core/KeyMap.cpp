@@ -1,5 +1,9 @@
 #include "KeyMap.hpp"
 
+
+#ifdef __WIN32 
+
+#elif defined __linux
 #include <libevdev/libevdev.h>
 
 unsigned int KeyMap::nameToCode(const std::string& name){
@@ -12,3 +16,4 @@ std::string KeyMap::codeToName(unsigned int code){
     return libevdev_event_code_get_name(EV_KEY,code);
 }
 
+#endif

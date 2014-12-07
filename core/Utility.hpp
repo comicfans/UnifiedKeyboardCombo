@@ -30,7 +30,10 @@ void ukc_log(LogLevel level,const char *message,const char* arg0="",const char* 
 
 void ukc_log(LogLevel level,const string& message,const char *arg0="",const char* arg1="");
 
+#ifdef __WIN32
+#elif defined __linux
 void ukc_log(LogLevel level,const char *message ,input_event *evdev_event);
+#endif
 
 #endif /* end of include guard: UTILITY_HPP_GQB8XJXS */
 
