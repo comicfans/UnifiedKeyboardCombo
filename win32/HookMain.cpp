@@ -60,17 +60,14 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 		return FALSE;
 	}
 
-	hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_HOOKINGRAWINPUTDEMO));
+	//hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_HOOKINGRAWINPUTDEMO));
 
 	// Main message loop:
 	while (GetMessage(&msg, NULL, 0, 0))
-	{
-		if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-	}
+    {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
 
 	return (int) msg.wParam;
 }
@@ -92,12 +89,12 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.cbClsExtra		= 0;
 	wcex.cbWndExtra		= 0;
 	wcex.hInstance		= hInstance;
-	wcex.hIcon			= LoadIcon(hInstance, MAKEINTRESOURCE(IDI_HOOKINGRAWINPUTDEMO));
+	wcex.hIcon			= NULL;//LoadIcon(hInstance, MAKEINTRESOURCE(IDI_HOOKINGRAWINPUTDEMO));
 	wcex.hCursor		= LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground	= (HBRUSH)(COLOR_WINDOW+1);
-	wcex.lpszMenuName	= MAKEINTRESOURCE(IDC_HOOKINGRAWINPUTDEMO);
+	wcex.lpszMenuName	= NULL;//MAKEINTRESOURCE(IDC_HOOKINGRAWINPUTDEMO);
 	wcex.lpszClassName = szWindowClass;
-	wcex.hIconSm		= LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+	wcex.hIconSm		= NULL;//LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
 	return RegisterClassEx(&wcex);
 }
@@ -157,9 +154,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	int wmId, wmEvent;
-	PAINTSTRUCT ps;
-	HDC hdc;
+	
 
 	switch (message)
 	{
@@ -326,29 +321,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 	}
-
-	case WM_COMMAND:
-		wmId    = LOWORD(wParam);
-		wmEvent = HIWORD(wParam);
-		// Parse the menu selections:
-		switch (wmId)
-		{
-		case IDM_ABOUT:
-			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-			break;
-		case IDM_EXIT:
-			DestroyWindow(hWnd);
-			break;
-		default:
-			return DefWindowProc(hWnd, message, wParam, lParam);
-		}
-		break;
-	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &ps);
+	case WM_PAINT:{
+                  
+    PAINTSTRUCT ps;
+    HDC hdc;
+    hdc = BeginPaint(hWnd, &ps);
 		TextOut (hdc, 10, 10, L"This application is for demonstration purposes only and doesn't have any practical use.", 87);
 		TextOut (hdc, 10, 40, L"Check Help/About for additional information.", 44);
 		EndPaint(hWnd, &ps);
-		break;
+		break;}
 	case WM_DESTROY:
 		UninstallHook ();
 		PostQuitMessage(0);

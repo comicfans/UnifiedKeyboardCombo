@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <Windows.h>
+#include <windows.h>
 
 #ifdef ukc_hook_EXPORTS
 	#define UKC_HOOK_API __declspec(dllexport)
