@@ -7,6 +7,7 @@ set(linux_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/UinputKeyboard.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/EvdevMatcher.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/MainLoop.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/KeyMap.cpp
     )
 
 

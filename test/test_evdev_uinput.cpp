@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     //enable all key events
 
         
-    libevdev_enable_event_code(evdev,EV_KEY,KEY_W,nullptr);
+    libevdev_enable_event_code(evdev,EV_KEY,KEY_W,0);
 
     int rc=libevdev_uinput_create_from_device(evdev,LIBEVDEV_UINPUT_OPEN_MANAGED,
             &m_uinputDev);

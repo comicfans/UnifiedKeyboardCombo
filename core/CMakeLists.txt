@@ -3,13 +3,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     include_directories(${EVDEV_INCLUDE_DIR})
     add_subdirectory(linux)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    #     add_subdirectory(win32)
+    add_subdirectory(win32)
 endif()
 
 
 set(ukc_core_srcs ${ukc_core_srcs}
     MultiMatcher.cpp DeviceMatcher.cpp 
-    KeyMap.cpp 
     NotMatcher.cpp
     GlobalInit.cpp
     Utility.cpp
