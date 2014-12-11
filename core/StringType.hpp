@@ -22,12 +22,12 @@
 
 #include <string>
 
-#if __WIN32
-#include <tchar.h>
+#ifdef _WIN32
+    #include <tchar.h>
     using StringType=std::wstring;
 #else
     using StringType=std::string;
-#define _T 
+    #define _T 
 #endif
 
 

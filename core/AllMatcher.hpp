@@ -24,9 +24,9 @@ class AllMatcher :public DeviceMatcher
 {
 public:
 
-    static constexpr const char* const CLASS_NAME="AllMatcher";
+    static constexpr const StringType::value_type* const CLASS_NAME=_T("AllMatcher");
 
-    virtual const char * const className()const override final {
+    virtual const StringType::value_type* const className()const override final {
         return CLASS_NAME;
     }
 
@@ -41,10 +41,10 @@ public:
 protected:
 
     //do nothing 
-    virtual void writeSelf(ptree& writeTo) const override final {}
+    virtual void writeSelf(TreeType& writeTo) const override final {}
 
     //ignore
-    virtual void readSelf(const ptree& readFrom) override final {}
+    virtual void readSelf(const TreeType& readFrom) override final {}
 
 
 };

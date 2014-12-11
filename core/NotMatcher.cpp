@@ -13,22 +13,22 @@ bool NotMatcher::matchDevice(const InputDevice &device)const{
 
 }
 
-static const string VALUE_KEY="value";
+static const StringType VALUE_KEY=_T("value");
 
-void NotMatcher::writeSelf(ptree& writeTo) const {
+void NotMatcher::writeSelf(TreeType& writeTo) const {
 
     if(!m_value){
         return;
     }
 
-    ptree childTree;
+    TreeType childTree;
 
     write(*m_value,childTree);
 
     writeTo.put_child(VALUE_KEY,childTree);
 }
 
-void NotMatcher::readSelf(const ptree& readFrom) {
+void NotMatcher::readSelf(const TreeType& readFrom) {
 
 
     //TODO

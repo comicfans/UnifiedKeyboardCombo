@@ -23,14 +23,13 @@
 #include <vector>
 #include <string>
 
-#include <boost/property_tree/ptree_fwd.hpp>
 
 #include "KeyMap.hpp"
+#include "TreeType.hpp"
 
 using std::vector;
 using std::unique_ptr;
 
-using boost::property_tree::ptree;
 
 static constexpr const StringType::value_type * const DEFAULT_CONFIG_JSON=_T("ukc.json");
 
@@ -60,13 +59,13 @@ public:
 
     void addKeyMap(KeyMap keyMap);
 
-    void read(const ptree& readFrom);
+    void read(const TreeType& readFrom);
 
-    void write(ptree& writeTo)const;
+    void write(TreeType& writeTo)const;
 
-    static vector<Profile> readList(const ptree& readFrom);
+    static vector<Profile> readList(const TreeType& readFrom);
 
-    static void writeList(const vector<Profile>& toWrite,ptree& tree);
+    static void writeList(const vector<Profile>& toWrite,TreeType& tree);
 
     const vector<KeyMap> & keyMaps()const{return m_keyMaps;}
 

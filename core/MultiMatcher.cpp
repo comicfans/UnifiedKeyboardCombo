@@ -29,24 +29,24 @@ bool MultiMatcher::matchDevice(const InputDevice &device)const{
 
 }
 
-static const string OPERATE_MODE_KEY="operateMode";
+static const StringType OPERATE_MODE_KEY=_T("operateMode");
 
-static const string VALUES_KEY="values";
+static const StringType VALUES_KEY=_T("values");
 
-static const string MATCHER_KEY="matcher";
+static const StringType MATCHER_KEY=_T("matcher");
 
-static const string OPERATE_MODE_MAP_NAME[2]={"AND","OR"};
+static const StringType OPERATE_MODE_MAP_NAME[2]={_T("AND"),_T("OR")};
 
-void MultiMatcher::writeSelf(ptree& writeTo) const {
+void MultiMatcher::writeSelf(TreeType& writeTo) const {
 
     writeTo.put(OPERATE_MODE_KEY,OPERATE_MODE_MAP_NAME[m_operateMode]);
 
     int index=0;
 
-    ptree values;
+    TreeType values;
 
     for(auto &child : m_values){
-        ptree childTree;
+        TreeType childTree;
 
         write(child,childTree);
 
@@ -57,11 +57,11 @@ void MultiMatcher::writeSelf(ptree& writeTo) const {
 
 }
 
-void MultiMatcher::readSelf(const ptree& readFrom) {
+void MultiMatcher::readSelf(const TreeType& readFrom) {
 
-    string operateMode=readFrom.get<string>(OPERATE_MODE_KEY);
+    StringType operateMode=readFrom.get<StringType>(OPERATE_MODE_KEY);
 
-    if(operateMode=="AND"){
+    if(operateMode==_T("AND")){
         m_operateMode=AND;
     }else{
         m_operateMode=OR;

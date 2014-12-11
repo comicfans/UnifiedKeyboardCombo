@@ -9,9 +9,9 @@ class NotMatcher: public DeviceMatcher
 {
 public:
 
-    static constexpr const char * const CLASS_NAME="NotMatcher";
+    static constexpr const StringType::value_type* const CLASS_NAME=_T("NotMatcher");
 
-    virtual const char* const className()const override final{
+    virtual const StringType::value_type* const className()const override final{
         return CLASS_NAME;
     }
 
@@ -25,9 +25,9 @@ public:
 
 protected:
 
-    virtual void writeSelf(ptree& writeTo) const override final;
+    virtual void writeSelf(TreeType& writeTo) const override final;
 
-    virtual void readSelf(const ptree& readFrom) override final;
+    virtual void readSelf(const TreeType& readFrom) override final;
 
 private:
 

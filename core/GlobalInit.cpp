@@ -15,7 +15,7 @@
 
 template<typename T>
 void DeviceMatcher::registerSubType(){
-    s_createFunctions[T::CLASS_NAME]=[](const ptree& propTree)
+    s_createFunctions[T::CLASS_NAME]=[](const TreeType& propTree)
             {
             DeviceMatcher *ret=new T();
 

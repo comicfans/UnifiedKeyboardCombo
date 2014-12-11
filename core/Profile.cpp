@@ -27,22 +27,22 @@ Profile& Profile::operator=(const Profile& rhs){
     return *this;
 }
 
-static const string MATCHER_KEY="MATCHER";
+static const StringType MATCHER_KEY=_T("MATCHER");
 
-static const string KEY_MAPS_KEY="KEY_MAPS";
+static const StringType KEY_MAPS_KEY=_T("KEY_MAPS");
 
-static const string FROM_KEY="FROM";
+static const StringType FROM_KEY=_T("FROM");
 
-static const string DESCRIPTION_KEY="DESCRIPTION";
-static const string NAME_KEY="NAME";
+static const StringType DESCRIPTION_KEY=_T("DESCRIPTION");
+static const StringType NAME_KEY=_T("NAME");
 
-static const string TO_KEY="TO";
+static const StringType TO_KEY=_T("TO");
 
-static const string DISABLE_NON_KEY_EVENT_KEY="DISABLE_NON_KEY_EVENT";
+static const StringType DISABLE_NON_KEY_EVENT_KEY=_T("DISABLE_NON_KEY_EVENT");
 
-static const string DISABLE_UNMAPPED_KEY_KEY="DISABLE_UNMAPPED_KEY";
+static const StringType DISABLE_UNMAPPED_KEY_KEY=_T("DISABLE_UNMAPPED_KEY");
 
-void Profile::read(const ptree& readFrom){
+void Profile::read(const TreeType& readFrom){
 
     m_name=readFrom.get<StringType>(NAME_KEY);
     m_description=readFrom.get<StringType>(DESCRIPTION_KEY);
@@ -77,12 +77,12 @@ void Profile::read(const ptree& readFrom){
     }
 }
 
-void Profile::write(ptree& writeTo)const{
+void Profile::write(TreeType& writeTo)const{
 
     writeTo.put(NAME_KEY,m_name);
     writeTo.put(DESCRIPTION_KEY,m_description);
 
-    ptree matcherTree;
+    TreeType matcherTree;
 
     DeviceMatcher::write(*m_matcher,matcherTree);
 
@@ -91,21 +91,21 @@ void Profile::write(ptree& writeTo)const{
     writeTo.put(DISABLE_NON_KEY_EVENT_KEY,m_disableNonKeyEvent);
     writeTo.put(DISABLE_UNMAPPED_KEY_KEY,m_disableUnmappedKey);
 
-    ptree keyMapsRoot;
+    TreeType keyMapsRoot;
 
     for(auto &keyMap:m_keyMaps){
-        ptree keyMapTree;
+        TreeType keyMapTree;
         keyMapTree.put(FROM_KEY,keyMap.fromKey);
         keyMapTree.put(TO_KEY,keyMap.toKey);
 
-        keyMapsRoot.put_child("KeyMap",keyMapTree);
+        keyMapsRoot.put_child(_T("KeyMap"),keyMapTree);
     }
 
     writeTo.add_child(KEY_MAPS_KEY,keyMapsRoot);
 }
 
     
-vector<Profile> Profile::readList(const ptree& readFrom){
+vector<Profile> Profile::readList(const TreeType& readFrom){
 
     vector<Profile> ret;
 
@@ -118,13 +118,13 @@ vector<Profile> Profile::readList(const ptree& readFrom){
     return ret;
 }
 
-static const string PROFILE_KEY="PROFILE";
+static const StringType PROFILE_KEY=_T("PROFILE");
     
-void Profile::writeList(const vector<Profile>& toWrite,ptree& tree){
+void Profile::writeList(const vector<Profile>& toWrite,TreeType& tree){
 
     for(auto &profile:toWrite){
 
-        ptree thisNode;
+        TreeType thisNode;
 
         profile.write(thisNode);
 

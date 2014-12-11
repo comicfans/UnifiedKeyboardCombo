@@ -5,13 +5,13 @@
 
 #include "GlobalInit.hpp"
 
-unordered_map<string,function<DeviceMatcher*(const ptree&)> > DeviceMatcher::s_createFunctions;
+unordered_map<StringType,function<DeviceMatcher*(const TreeType&)> > DeviceMatcher::s_createFunctions;
 
 const bool DeviceMatcher::GLOBAL_INIT=globalInit();
 
-static const string CLASS_NAME_KEY("CLASS_NAME");
+static const StringType CLASS_NAME_KEY(_T("CLASS_NAME"));
 
-void DeviceMatcher::write(const DeviceMatcher &matcher,ptree& writeTo){
+void DeviceMatcher::write(const DeviceMatcher &matcher,TreeType& writeTo){
 
     writeTo.put(CLASS_NAME_KEY,matcher.className());
 
@@ -19,9 +19,9 @@ void DeviceMatcher::write(const DeviceMatcher &matcher,ptree& writeTo){
 
 }
 
-DeviceMatcher *DeviceMatcher::read(const ptree& readFrom){
+DeviceMatcher *DeviceMatcher::read(const TreeType& readFrom){
     
-    auto className=readFrom.get<string>(CLASS_NAME_KEY);
+    auto className=readFrom.get<StringType>(CLASS_NAME_KEY);
 
     auto functionIt=s_createFunctions.find(className);
 
