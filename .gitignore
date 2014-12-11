@@ -7,3 +7,6 @@ gcc
 .ycm_extra_conf.pyc
 clang
 gcc_debug
+clang
+clang_mingw
+mingw
