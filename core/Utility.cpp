@@ -50,13 +50,13 @@ bool simpleWildMatch(const string& toTest,const string & wild){
     bool firstNotAny=(usedWild[0]!=MATCH_ALL_WILD[0]);
     bool lastNotAny=(usedWild.back()!=MATCH_ALL_WILD[0]);
 
-    int searchPos=0;
+    string::size_type searchPos=0;
 
-    for(int i=0;i<tokens.size();++i){
+    for(string::size_type i=0;i<tokens.size();++i){
 
         auto & thisWild=tokens[i];
 
-        int foundPos=toTest.find(thisWild,searchPos);
+        string::size_type foundPos=toTest.find(thisWild,searchPos);
         if(foundPos==string::npos){
             return false;
         }

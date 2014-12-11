@@ -47,7 +47,6 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 
  	// TODO: Place code here.
 	MSG msg;
-	HACCEL hAccelTable;
 
 	// Initialize global strings
 	//LoadString(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
