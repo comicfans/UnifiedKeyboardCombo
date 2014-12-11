@@ -16,3 +16,18 @@
  * =====================================================================================
  */
 
+#ifndef RAWINPUTDEVICE_HPP_2RUIAKFU
+#define RAWINPUTDEVICE_HPP_2RUIAKFU
+
+class RawInputDevice
+{
+public:
+    RawInputDevice (arguments);
+    virtual ~RawInputDevice ();
+
+private:
+    /* data */
+};
+
+
+#endif /* end of include guard: RAWINPUTDEVICE_HPP_2RUIAKFU */

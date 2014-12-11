@@ -44,8 +44,8 @@ static const string DISABLE_UNMAPPED_KEY_KEY="DISABLE_UNMAPPED_KEY";
 
 void Profile::read(const ptree& readFrom){
 
-    m_name=readFrom.get<string>(NAME_KEY);
-    m_description=readFrom.get<string>(DESCRIPTION_KEY);
+    m_name=readFrom.get<StringType>(NAME_KEY);
+    m_description=readFrom.get<StringType>(DESCRIPTION_KEY);
 
     m_matcher.reset();
     m_keyMaps.clear();
@@ -70,8 +70,8 @@ void Profile::read(const ptree& readFrom){
 
         KeyMap thisOne;
 
-        thisOne.fromKey=value.second.get<string>(FROM_KEY);
-        thisOne.toKey=value.second.get<string>(TO_KEY);
+        thisOne.fromKey=value.second.get<StringType>(FROM_KEY);
+        thisOne.toKey=value.second.get<StringType>(TO_KEY);
 
         m_keyMaps.push_back(thisOne);
     }

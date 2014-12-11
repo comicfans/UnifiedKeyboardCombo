@@ -1,21 +1,21 @@
 #ifndef KEYMAP_HPP_96OYYFZW
 #define KEYMAP_HPP_96OYYFZW
 
-#include <string>
+#include "StringType.hpp"
 
 struct KeyMap{
 
-    std::string fromKey;
+    StringType fromKey;
 
     unsigned int fromKeyCode()const{return nameToCode(fromKey);}
 
-    std::string toKey;
+    StringType toKey;
 
     unsigned int toKeyCode()const{return nameToCode(toKey);}
 
-    static unsigned int nameToCode(const std::string& name);
+    static unsigned int nameToCode(const StringType& name);
 
-    static std::string codeToName(unsigned int code);
+    static StringType codeToName(unsigned int code);
 };
 
 

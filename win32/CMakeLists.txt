@@ -1,6 +1,7 @@
 add_library(ukc_hook 
     SHARED
     HookDll.cpp
+    WatchConfigFileChange.cpp
     )
 
 target_link_libraries(ukc_hook ukc_core)

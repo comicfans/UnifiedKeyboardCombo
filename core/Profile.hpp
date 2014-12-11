@@ -27,13 +27,12 @@
 
 #include "KeyMap.hpp"
 
-using std::string;
 using std::vector;
 using std::unique_ptr;
 
 using boost::property_tree::ptree;
 
-static constexpr const char * const DEFAULT_CONFIG_JSON="ukc.json";
+static constexpr const StringType::value_type * const DEFAULT_CONFIG_JSON=_T("ukc.json");
 
 class DeviceMatcher;
 class Profile
@@ -46,15 +45,15 @@ public:
 
     Profile& operator=(const Profile& rhs);
 
-    const string& name()const{return m_name;}
+    const StringType& name()const{return m_name;}
 
-    void setName(const string& nameSet){m_name=nameSet;};
+    void setName(const StringType& nameSet){m_name=nameSet;};
 
-    const string& description()const{return m_description;}
+    const StringType& description()const{return m_description;}
 
     const DeviceMatcher &matcher(){return *m_matcher;}
 
-    void setDescription(const string& descriptionSet){
+    void setDescription(const StringType& descriptionSet){
         m_description=descriptionSet;}
 
     void setMatcher(DeviceMatcher *token);
@@ -81,9 +80,9 @@ public:
 
 private:
 
-    string m_name;
+    StringType m_name;
 
-    string m_description;
+    StringType m_description;
 
     unique_ptr<DeviceMatcher> m_matcher;
 

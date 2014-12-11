@@ -3,7 +3,11 @@
 #include <memory>
 #include <boost/property_tree/json_parser.hpp>
 
-static void readFileChange(HANDLE watchHandle){
+#include <winbase.h>
+
+#include "Profile.hpp"
+
+static bool readFileChange(HANDLE watchHandle){
 
     //WTF ?
     /* 
@@ -30,23 +34,34 @@ static void readFileChange(HANDLE watchHandle){
     .. althrough there is some mixup as Findxxx gives faster/more notifications then Readxxx and therefore the Readxxx will hang after some changes 
     */
 
-    static const int BUFFER_SIZE=10000;
+    static const auto BUFFER_SIZE=10000;
     std::unique_ptr<DWORD[]> buffer(new DWORD[BUFFER_SIZE]);
 
     DWORD bufferUsed=0;
 
-    ReadDirectoryChanges(watchHandle,buffer.get(),BUFFER_SIZE,FALSE,
+    ReadDirectoryChangesW(watchHandle,buffer.get(),BUFFER_SIZE,FALSE,
             FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_LAST_WRITE|FILE_NOTIFY_CHANGE_CREATION,
             &bufferUsed,NULL,NULL);
 
     int leftSize=bufferUsed;
 
-    while(leftSize<sizeof(FILE_NOTIFY_INFORMATION)){
+
+    while(leftSize>sizeof(FILE_NOTIFY_INFORMATION)){
     
-        FILE_NOTIFY_INFORMATION *res=buffer.get();
-        break;//?
+        FILE_NOTIFY_INFORMATION *change=reinterpret_cast<FILE_NOTIFY_INFORMATION*>(buffer.get()+bufferUsed-leftSize);
+
+        if(wcsncmp(DEFAULT_CONFIG_JSON,change->FileName,change->FileNameLength)==0){
+            return true;
+        }
+
+        if(change->NextEntryOffset==0){
+            return false;
+        }
+
+        leftSize-=change->NextEntryOffset;
     }
 
+    return false;
 
 }
 
@@ -59,7 +74,7 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
     GetModuleFileName(NULL,fileName,MAX_PATH);
 
     auto watchHandle=FindFirstChangeNotification(
-            &fileName,FALSE,
+            fileName,FALSE,
             FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_LAST_WRITE
             );
 
@@ -78,7 +93,7 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
 
         auto quit=false;
 
-        auto waitStatus = WaitForMultiplyObjects(2,handles,FALSE,INFINITE);
+        auto waitStatus = WaitForMultipleObjects(2,handles,FALSE,INFINITE);
 
         switch(waitStatus){
             case WAIT_OBJECT_0:{
