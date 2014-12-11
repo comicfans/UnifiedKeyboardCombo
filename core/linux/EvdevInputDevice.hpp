@@ -1,13 +1,12 @@
 #ifndef EVDEVINPUTDEVICE_HPP_02FXJUQZ
 #define EVDEVINPUTDEVICE_HPP_02FXJUQZ
 
-#include <string>
 #include <vector>
 #include <memory>
 
 #include "KeyMap.hpp"
+#include "StringType.hpp"
 
-using std::string;
 using std::unique_ptr;
 using std::vector;
 
@@ -21,17 +20,17 @@ class EvdevInputDevice
 public:
 
     //only for test purpose
-    EvdevInputDevice(string name,string vid,string pid,
-            string physical,string bus,string filename);
+    EvdevInputDevice(StringType name,StringType vid,StringType pid,
+            StringType physical,StringType bus,StringType filename);
 
-    const string& vid()const{return m_vid;}
-    const string& pid()const {return m_pid;}
-    const string& name()const{return m_name;}
-    const string& physical()const{return m_physical;}
+    const StringType& vid()const{return m_vid;}
+    const StringType& pid()const {return m_pid;}
+    const StringType& name()const{return m_name;}
+    const StringType& physical()const{return m_physical;}
 
     bool processEvent();
 
-    string description()const;
+    StringType description()const;
 
     EvdevInputDevice(const EvdevInputDevice& rhs)=delete;
     EvdevInputDevice &operator=(const EvdevInputDevice& rhs)=delete;
@@ -60,23 +59,23 @@ private:
 
     bool grabAndPrepare();
 
-    string m_pid;
-    string m_vid;
+    StringType m_pid;
+    StringType m_vid;
 
 
     //not used now
-    string m_name;
+    StringType m_name;
 
     //not used now
-    string m_physical;
+    StringType m_physical;
 
     //not used now
-    string m_bus;
+    StringType m_bus;
 
     //not used now
-    string m_fileName;
+    StringType m_fileName;
 
-    string m_uniq;
+    StringType m_uniq;
 
     unique_ptr<uint16_t[]> m_keyMaps;
 

@@ -6,9 +6,9 @@
 #include <boost/optional.hpp>
 #include <boost/property_tree/ptree.hpp>
     
-void EvdevMatcher::setWild(WildIndex index,const std::string& wild){
+void EvdevMatcher::setWild(WildIndex index,const StringType& wild){
 
-    string & toOperate=m_wild[index];
+    StringType & toOperate=m_wild[index];
 
     toOperate=wild;
 
@@ -32,10 +32,10 @@ bool EvdevMatcher::matchDevice(const InputDevice& inputDevice) const{
 }
 
 
-static const string WILD_KEYS[EvdevMatcher::PROP_NUMBER]=
+static const StringType WILD_KEYS[EvdevMatcher::PROP_NUMBER]=
 {"NAME","VID","PID","PHYSICAL"};
 
-void EvdevMatcher::writeSelf(ptree& writeTo)const {
+void EvdevMatcher::writeSelf(TreeType& writeTo)const {
 
     for (int i = 0; i < PROP_NUMBER; ++i){
         writeTo.put(WILD_KEYS[i],m_wild[i]);
@@ -43,11 +43,11 @@ void EvdevMatcher::writeSelf(ptree& writeTo)const {
 }
 
     
-void EvdevMatcher::readSelf(const ptree& readFrom) {
+void EvdevMatcher::readSelf(const TreeType& readFrom) {
 
     for (int i = 0; i < PROP_NUMBER; ++i){
-        if(boost::optional<string> value=
-                readFrom.get_optional<string>(WILD_KEYS[i])){
+        if(boost::optional<StringType> value=
+                readFrom.get_optional<StringType>(WILD_KEYS[i])){
             m_wild[i]=*value;
         }else{
             m_wild[i]=MATCH_ALL_WILD;

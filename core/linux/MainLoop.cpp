@@ -194,7 +194,7 @@ void MainLoop::reloadConfig(bool createWatch){
 
     //reade default config
 
-    ptree readTree;
+    TreeType readTree;
 
     try{
         ukc_log(INFO,"try reading config file",DEFAULT_CONFIG_JSON);

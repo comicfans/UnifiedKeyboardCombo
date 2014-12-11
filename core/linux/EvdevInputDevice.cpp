@@ -18,8 +18,8 @@
 #include <libevdev/libevdev.h>
 #include <libevdev/libevdev-uinput.h>
  
-EvdevInputDevice::EvdevInputDevice(string name,string vid,string pid,
-            string physical,string bus,string filename):
+EvdevInputDevice::EvdevInputDevice(StringType name,StringType vid,StringType pid,
+            StringType physical,StringType bus,StringType filename):
     EvdevInputDevice(){
     m_name=name;
     m_vid=vid;
@@ -35,9 +35,9 @@ EvdevInputDevice::EvdevInputDevice(){
 }
   
 
-std::unordered_map<int,string> createBusNames(){
+std::unordered_map<int,StringType> createBusNames(){
 
-    std::unordered_map<int,string> ret;
+    std::unordered_map<int,StringType> ret;
 
     ret[BUS_PCI]="BUS_PCI";
     ret[BUS_ISAPNP]="BUS_ISAPNP";
@@ -64,7 +64,7 @@ std::unordered_map<int,string> createBusNames(){
 
 static const auto BUS_MAP_NAME=createBusNames();
 
-string EvdevInputDevice::description()const{
+StringType EvdevInputDevice::description()const{
 
     return 
         "Filename:"+m_fileName+ 
@@ -84,7 +84,7 @@ bool EvdevInputDevice::valid()const{
         return false;
     }
 
-    if(m_name.find(UinputKeyboard::VIRTUAL_DEVICE_PREFIX)!=string::npos){
+    if(m_name.find(UinputKeyboard::VIRTUAL_DEVICE_PREFIX)!=StringType::npos){
         return false;
     }
 
