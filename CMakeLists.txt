@@ -7,16 +7,29 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
 
 find_package(Boost REQUIRED)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ")
 
 if(WIN32)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows -municode")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows -municode -std=c++11")
+    if(MSVC)
+        add_definitions(-DUNICODE)
+        add_definitions(-D_UNICODE)
+    else()
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows -municode")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows -municode -std=c++11")
+    endif()
+endif()
+
+
+if(MINGW)
 
     add_definitions(-DUNICODE)
     add_definitions(-D_UNICODE)
 
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ")
+
+elseif(WIN32)
+    #msvc here
 else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ")
     include_directories(${CMAKE_SOURCE_DIR}/core/linux)
 endif()
 
