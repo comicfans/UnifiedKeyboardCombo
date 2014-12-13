@@ -20,12 +20,20 @@
 #include <winuser.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
+
+ 
+#include "Utility.hpp"
     
 RawInputDevice::DeviceListType RawInputDevice::scanDevices(){
+    UINT number;
 
-    auto number=GetRawInputDeviceList(nullptr,nullptr,0);
-    if (number!=0){
-        
+    auto value=GetRawInputDeviceList(nullptr,&number,sizeof(RAWINPUTDEVICELIST));
+    if (value==UINT(-1)){
+        ukc_log(UKC_ERROR,_T("error"),GetLastError());
+        return DeviceListType();
+    }
+    if(number==0){
+        ukc_log(UKC_INFO,_T("no rawinput device found"),_T(""));
         return DeviceListType();
     }
 
@@ -41,6 +49,10 @@ RawInputDevice::DeviceListType RawInputDevice::scanDevices(){
 
     for (decltype(number) i = 0; i < number; ++i)
     {
+        std::unique_ptr<RawInputDevice> thisOne(new RawInputDevice(list[i].hDevice));
+        if(thisOne->m_handle){
+            ret.push_back(std::move(thisOne));
+        }
     }
     return ret;
 }
@@ -71,6 +83,7 @@ RawInputDevice::RawInputDevice(HANDLE device){
 
     if (value==UINT(-1))
     {
+        ukc_log(UKC_ERROR,_T("error when getting device name : "),GetLastError());
         m_handle=nullptr;
         return;
     }
@@ -81,6 +94,7 @@ RawInputDevice::RawInputDevice(HANDLE device){
 
     if (value==UINT(-1))
     {
+        ukc_log(UKC_ERROR,_T("error when getting device name : "),GetLastError());
         m_handle=nullptr;
         return ;
     }
@@ -113,7 +127,7 @@ RawInputDevice::RawInputDevice(HANDLE device){
     auto &idPath=infos[2];
 
     keyPath=(boost::wformat(
-                _T("(System\CurrentControlSet\Enum\%0%\%1%\%2%)"))
+                LR"(System\CurrentControlSet\Enum\%0%\%1%\%2%)")  
             %_T("ACPI")%infos[1]%infos[2]).str();    
 
     DWORD size;

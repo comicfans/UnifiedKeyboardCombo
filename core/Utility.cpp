@@ -16,7 +16,7 @@
 void stripWildString(StringType& toStrip){
 
     auto end=std::unique(toStrip.begin(),toStrip.end(),
-            [](char prev,char next)->bool{
+            [](StringType::value_type prev,StringType::value_type next)->bool{
             return (prev==MATCH_ALL_WILD[0]) && 
                    (next==MATCH_ALL_WILD[0]);
             });
@@ -91,15 +91,16 @@ bool simpleWildMatch(const StringType& toTest,const StringType & wild){
     return true;
 }
 
-static LogLevel ukc_logLevel=TRACE;
+static LogLevel ukc_logLevel=UKC_TRACE;
 
 void setLogLevel(LogLevel level){
     ukc_logLevel=level;
 }
 
-static const char * const LOG_LEVEL_STRING[4]={"[TRACE]","[DEBUG]","[INFO]","[ERROR]"};
+static const StringType::value_type* const LOG_LEVEL_STRING[4]={
+    _T("[UKC_TRACE]"),_T("[UKC_DEBUG]"),_T("[UKC_INFO]"),_T("[UKC_ERROR]")};
 
-void ukc_log(LogLevel level,const char *message){
+void ukc_log(LogLevel level,const StringType::value_type *message){
 
     if (level>=ukc_logLevel) {
         Cout<<message<<'\n';
@@ -113,31 +114,34 @@ void ukc_log(LogLevel level,const StringType& message){
     }
 }
 
-void ukc_log(LogLevel level,const char *message,int arg0){
+void ukc_log(LogLevel level,const StringType::value_type *const message,
+        int arg0){
 
     if (level>=ukc_logLevel) {
         Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<'\n';
     }
 }
 
-void ukc_log(LogLevel level,const char *message,int arg0,int arg1){
+void ukc_log(LogLevel level,const StringType::value_type *const message,int arg0,int arg1){
 
     if (level>=ukc_logLevel) {
-        Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<_T(": ")<<arg0<<_T(",")<<arg1<<'\n';
     }
 }
 
-void ukc_log(LogLevel level,const char *message,const char* arg0,const char* arg1){
+void ukc_log(LogLevel level,const StringType::value_type *message,const StringType::value_type * arg0,const StringType::value_type * arg1){
 
     if (level>=ukc_logLevel) {
-        Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<_T(": ")<<arg0<<_T(",")<<arg1<<'\n';
     }
 }
 
-void ukc_log(LogLevel level,const StringType& message,const char* arg0,const char* arg1){
+void ukc_log(LogLevel level,const StringType& message,
+        const StringType::value_type* const arg0,
+        const StringType::value_type* const arg1){
 
     if (level>=ukc_logLevel) {
-        Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<_T(": ")<<arg0<<_T(",")<<arg1<<'\n';
     }
 }
 

@@ -13,21 +13,25 @@ void stripWildString(StringType& toStrip);
 
 bool simpleWildMatch(const StringType& toTest,const StringType& wild);
 
-enum LogLevel{TRACE,DEBUG,INFO,ERROR};
+enum LogLevel{UKC_TRACE,UKC_DEBUG,UKC_INFO,UKC_ERROR};
 
 void setLogLevel(LogLevel level);
 
-void ukc_log(LogLevel level,const char *message);
+void ukc_log(LogLevel level,const StringType::value_type *message);
 
 void ukc_log(LogLevel level,const StringType& message);
 
-void ukc_log(LogLevel level,const char *message,int arg0,int arg1);
+void ukc_log(LogLevel level,const StringType::value_type *message,int arg0,int arg1);
 
-void ukc_log(LogLevel level,const char *message,int arg0);
+void ukc_log(LogLevel level,const StringType::value_type *message,int arg0);
 
-void ukc_log(LogLevel level,const char *message,const char* arg0="",const char* arg1="");
+void ukc_log(LogLevel level,const StringType::value_type *message,
+        const StringType::value_type * const arg0=_T(""),
+        const StringType::value_type * const arg1=_T(""));
 
-void ukc_log(LogLevel level,const StringType& message,const char *arg0="",const char* arg1="");
+void ukc_log(LogLevel level,const StringType& message,
+        const StringType::value_type * const arg0=_T(""),
+        const StringType::value_type * const arg1=_T(""));
 
 #ifdef __WIN32
 #elif defined __linux

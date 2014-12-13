@@ -100,25 +100,25 @@ static int is_event_device(const struct dirent *dir) {
 EvdevInputDevice::EvdevInputDevice(const char * filename)
 :EvdevInputDevice(){
 
-    ukc_log(INFO,"creating device from :",filename);
+    ukc_log(UKC_INFO,"creating device from :",filename);
 
     m_evdevFd = open(filename, O_RDONLY|O_NONBLOCK);
 
     if (m_evdevFd < 0){
-        ukc_log(DEBUG,"can not open file :",filename,",maybe you need root permission");
+        ukc_log(UKC_DEBUG,"can not open file :",filename,",maybe you need root permission");
         return;
     }
 
     int rc=libevdev_new_from_fd(m_evdevFd,&m_evdev);
 
     if(rc<0){
-        ukc_log(DEBUG,"can not open file :",filename,",maybe you need root permission");
+        ukc_log(UKC_DEBUG,"can not open file :",filename,",maybe you need root permission");
         return ;
     }
 
     if (!libevdev_has_event_type(m_evdev,EV_KEY)){
         //not support EV_KEY
-        ukc_log(INFO,filename," not support EV_KEY,skip it");
+        ukc_log(UKC_INFO,filename," not support EV_KEY,skip it");
         
         libevdev_free(m_evdev);
         m_evdev=nullptr;
@@ -181,7 +181,7 @@ EvdevInputDevice::DeviceListType EvdevInputDevice::scanDevices(){
 		free(namelist[i]);
 
         if(thisOne->valid()){
-            ukc_log(INFO,thisOne->description()," created");
+            ukc_log(UKC_INFO,thisOne->description()," created");
             ret.push_back(std::move(thisOne));
         }
 	}
@@ -208,19 +208,19 @@ bool EvdevInputDevice::configure(const vector<KeyMap> & keyMaps,
     }
 
     for(auto &keyMap:keyMaps){
-        ukc_log(TRACE,"map key ",keyMap.fromKey.c_str(),keyMap.toKey.c_str());
+        ukc_log(UKC_TRACE,"map key ",keyMap.fromKey.c_str(),keyMap.toKey.c_str());
 
         int fromKeyCode=keyMap.fromKeyCode();
 
         if (fromKeyCode==-1) {
-            ukc_log(ERROR,"bad from key name",keyMap.fromKey.c_str());
+            ukc_log(UKC_ERROR,"bad from key name",keyMap.fromKey.c_str());
             continue;
         }
 
         int toKeyCode=keyMap.toKeyCode();
 
         if (toKeyCode==-1) {
-            ukc_log(ERROR,"bad to key name",keyMap.toKey.c_str());
+            ukc_log(UKC_ERROR,"bad to key name",keyMap.toKey.c_str());
             continue;
         }
 
@@ -244,18 +244,18 @@ bool EvdevInputDevice::processEvent(){
 
         input_event ev;
 
-        ukc_log(TRACE,m_fileName,"begin to read ");
+        ukc_log(UKC_TRACE,m_fileName,"begin to read ");
         int rc = libevdev_next_event(m_evdev, LIBEVDEV_READ_FLAG_NORMAL, &ev);
-        ukc_log(TRACE,"read complete ,result",rc);
+        ukc_log(UKC_TRACE,"read complete ,result",rc);
 
         if(rc == LIBEVDEV_READ_STATUS_SYNC){
             //TODO
-            ukc_log(ERROR,"input too fast ,cause drop ,TBD","");
+            ukc_log(UKC_ERROR,"input too fast ,cause drop ,TBD","");
             return false;
         }
 
         if (rc == -EAGAIN){
-            ukc_log(TRACE,"no more events ","");
+            ukc_log(UKC_TRACE,"no more events ","");
             return true;
         }
 
@@ -269,7 +269,7 @@ bool EvdevInputDevice::processEvent(){
                 if(toKeyCode!=KEY_RESERVED){
 
                     ev.code=toKeyCode;
-                    ukc_log(TRACE,"map to key ",&ev);
+                    ukc_log(UKC_TRACE,"map to key ",&ev);
 
                     UinputKeyboard::instance().postKeyEvent(toKeyCode,ev.value);
 
@@ -278,10 +278,10 @@ bool EvdevInputDevice::processEvent(){
 
                 //unmapped key
                 if (!m_disableUnmappedKey) {
-                    ukc_log(TRACE,"passthrough unmapped key code,value :",&ev);
+                    ukc_log(UKC_TRACE,"passthrough unmapped key code,value :",&ev);
                     UinputKeyboard::instance().postKeyEvent(ev.code,ev.value);
                 }else{
-                    ukc_log(TRACE,"drop unmapped key : ",&ev);
+                    ukc_log(UKC_TRACE,"drop unmapped key : ",&ev);
                 }
 
                 continue;
@@ -289,11 +289,11 @@ bool EvdevInputDevice::processEvent(){
 
 
             if(m_disableNonKeyEvent){
-                ukc_log(TRACE,"drop none EV_KEY event :",&ev);
+                ukc_log(UKC_TRACE,"drop none EV_KEY event :",&ev);
                 continue;
             }
 
-            ukc_log(TRACE,"passthrough event :",&ev);
+            ukc_log(UKC_TRACE,"passthrough event :",&ev);
 
             BOOST_ASSERT(m_uinputDev);
 
@@ -302,7 +302,7 @@ bool EvdevInputDevice::processEvent(){
             continue;
         }
 
-        ukc_log(ERROR,"event read failed","");
+        ukc_log(UKC_ERROR,"event read failed","");
         return false;
 
     }
@@ -347,11 +347,11 @@ bool EvdevInputDevice::grabAndPrepare(){
 
     //no need to create shadow input
     if (!hasOtherEventType || m_disableNonKeyEvent) {
-        ukc_log(DEBUG,"device only support EV_KEY, no need to create shadow input ,",m_name.c_str());
+        ukc_log(UKC_DEBUG,"device only support EV_KEY, no need to create shadow input ,",m_name.c_str());
         return true;
     }
 
-    ukc_log(INFO,"will create shadow input of ",m_name.c_str());
+    ukc_log(UKC_INFO,"will create shadow input of ",m_name.c_str());
 
     libevdev_set_name(m_evdev,(UinputKeyboard::VIRTUAL_DEVICE_PREFIX+m_name).c_str());
 
@@ -399,7 +399,7 @@ bool EvdevInputDevice::registerPoll(int epollFd){
     int rc= epoll_ctl(m_epollFd,EPOLL_CTL_ADD,m_evdevFd,&ev);
 
     if (rc==-1){
-        ukc_log(ERROR,"can not add poll ev for ",m_name.c_str());
+        ukc_log(UKC_ERROR,"can not add poll ev for ",m_name.c_str());
         return false;
     }
     return true;
@@ -416,7 +416,7 @@ EvdevInputDevice * EvdevInputDevice::tryCreateNew(const char * name){
         return ret.release();
     }
 
-    ukc_log(DEBUG,"create evdev failed or this is UnifiedKeyboardCombo virtual keyboard","ignore");
+    ukc_log(UKC_DEBUG,"create evdev failed or this is UnifiedKeyboardCombo virtual keyboard","ignore");
 
     return nullptr;
 }
