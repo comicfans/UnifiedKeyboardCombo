@@ -1,7 +1,7 @@
 #include "Profile.hpp"
 
-#include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include "TreeType.hpp"
 
 #include "linux/EvdevMatcher.hpp"
 
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     list.push_back(profile);
     list.push_back(profile);
 
-    ptree root;
+    TreeType root;
 
     Profile::writeList(list,root);
 

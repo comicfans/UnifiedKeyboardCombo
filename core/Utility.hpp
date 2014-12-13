@@ -2,17 +2,16 @@
 #ifndef UTILITY_HPP_GQB8XJXS
 #define UTILITY_HPP_GQB8XJXS
 
-#include <string>
+#include "StringType.hpp"
 
-using std::string;
 
 struct input_event;
 
-constexpr const char * MATCH_ALL_WILD="*";
+constexpr const StringType::value_type* MATCH_ALL_WILD=_T("*");
 
-void stripWildString(string& toStrip);
+void stripWildString(StringType& toStrip);
 
-bool simpleWildMatch(const string& toTest,const string & wild);
+bool simpleWildMatch(const StringType& toTest,const StringType& wild);
 
 enum LogLevel{TRACE,DEBUG,INFO,ERROR};
 
@@ -20,7 +19,7 @@ void setLogLevel(LogLevel level);
 
 void ukc_log(LogLevel level,const char *message);
 
-void ukc_log(LogLevel level,const string& message);
+void ukc_log(LogLevel level,const StringType& message);
 
 void ukc_log(LogLevel level,const char *message,int arg0,int arg1);
 
@@ -28,7 +27,7 @@ void ukc_log(LogLevel level,const char *message,int arg0);
 
 void ukc_log(LogLevel level,const char *message,const char* arg0="",const char* arg1="");
 
-void ukc_log(LogLevel level,const string& message,const char *arg0="",const char* arg1="");
+void ukc_log(LogLevel level,const StringType& message,const char *arg0="",const char* arg1="");
 
 #ifdef __WIN32
 #elif defined __linux

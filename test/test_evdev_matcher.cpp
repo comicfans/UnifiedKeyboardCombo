@@ -24,7 +24,8 @@
 #include <gtest/gtest.h>
 
     
-EvdevInputDevice input("fakedevice","00ac","89ac","physcial","BUS_USB","fakeinputname");
+EvdevInputDevice input(_T("fakedevice"),_T("00ac"),_T("89ac"),_T("physcial"),
+        _T("BUS_USB"),_T("fakeinputname"));
 
 TEST(EvdevMatcherTest,testVidEqual){
 
@@ -48,7 +49,7 @@ TEST(EvdevMatcherTest,testVidWild){
 
     EvdevMatcher matcher;
 
-    matcher.setWild(EvdevMatcher::VID,"00a*");
+    matcher.setWild(EvdevMatcher::VID,_T("00a*"));
 
     ASSERT_TRUE(matcher.matchDevice(input));
 }
@@ -56,11 +57,11 @@ TEST(EvdevMatcherTest,testVidWild){
 
 TEST(EvdevMatcherTest,testSaveLoad){
 
-    ptree writeTo;
+    TreeType writeTo;
     EvdevMatcher matcher;
 
-    matcher.setWild(EvdevMatcher::VID,"99ac");
-    matcher.setWild(EvdevMatcher::PID,"720b");
+    matcher.setWild(EvdevMatcher::VID,_T("99ac"));
+    matcher.setWild(EvdevMatcher::PID,_T("720b"));
 
     DeviceMatcher::write(matcher,writeTo);
 

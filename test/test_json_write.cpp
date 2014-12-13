@@ -1,6 +1,7 @@
 #include "MultiMatcher.hpp"
 #include "AllMatcher.hpp"
 #include "NotMatcher.hpp"
+#include "TreeType.hpp"
 
 //#include <gtest/gtest.h>
 
@@ -19,13 +20,13 @@ int main(int argc, char *argv[])
     
     top.addMatcher(new AllMatcher());
 
-    ptree tree;
+    TreeType tree;
 
     DeviceMatcher::write(top,tree);
 
     write_json("out.json",tree);
 
-    ptree readBack;
+    TreeType readBack;
     read_json("out.json",readBack);
 
     DeviceMatcher *readBackMatcher=DeviceMatcher::read(readBack);

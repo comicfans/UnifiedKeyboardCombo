@@ -2,49 +2,59 @@
 #define UKC_CLI_CPP_3AJJPELC
 
 #include "PlatformInc.hpp"
+#include "StringType.hpp"
 
 #include <iostream>
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <vector>
-
-using std::cout;
-using std::cin;
+#include <iostream>
 using std::vector;
 
-int main(int argc, char *argv[])
+#ifdef _WIN32
+    static auto &Cout=std::wcout;
+    static auto &Cin=std::wcin;
+    #define MAIN_ENTRY wmain
+#else
+    static auto &Cout=std::cout;
+    static auto &Cin=std::cin;
+    #define MAIN_ENTRY main
+#endif
+
+int MAIN_ENTRY(int argc, StringType::value_type* argv[])
 {
 
-    cout<<"scanning devices...\n";
+    Cout<<"scanning devices...\n";
 
     auto list=InputDevice::scanDevices();
 
     if (list.empty()){
         
-        cout<<"can not found valid input device, maybe you need root permission\n";
+        Cout<<"can not found valid input device, maybe you need root permission\n";
         return EXIT_FAILURE;
     }
     
     
-    for(int i=0;i<list.size();++i){
-        cout<<"index "<<i<<":"<<list[i]->description()<<"\n";
+    for(size_t i=0;i<list.size();++i){
+        Cout<<"index "<<i<<":"<<list[i]->description()<<"\n";
     }
 
-    cout<<"choose which devices you want to use as input source \n"
+    Cout<<"choose which devices you want to use as input source \n"
         <<"input format : index [index], for example: 0 1 4"
         <<"(their input will be grabbed exclusive\n"
         <<" used as virtual unified keyboard input)\n"
         <<"please note: dumb map can makes input device totally none-work";
 
-    string selected;
+    StringType selected;
 
-    getline(cin,selected);
+    getline(Cin,selected);
 
-    vector<string> selectedIndex;
+    vector<StringType> selectedIndex;
 
     boost::split(selectedIndex,selected,boost::is_space(),
             boost::token_compress_on);
 
+    return EXIT_SUCCESS;
 }
 
 

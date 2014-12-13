@@ -6,9 +6,14 @@
 
 #if __linux
     #include <libevdev/libevdev.h>
+    static auto& Cout=std::cout;
+    static auto& Cin=std::cin;
+#elif _WIN32    
+    auto& Cout=std::wcout;
+    auto& Cin=std::wcin;
 #endif
 
-void stripWildString(string& toStrip){
+void stripWildString(StringType& toStrip){
 
     auto end=std::unique(toStrip.begin(),toStrip.end(),
             [](char prev,char next)->bool{
@@ -19,9 +24,9 @@ void stripWildString(string& toStrip){
     toStrip.resize(end-toStrip.begin());
 }
 
-bool simpleWildMatch(const string& toTest,const string & wild){
+bool simpleWildMatch(const StringType& toTest,const StringType & wild){
 
-    string usedWild=wild;
+    StringType usedWild=wild;
 
     stripWildString(usedWild);
 
@@ -33,12 +38,12 @@ bool simpleWildMatch(const string& toTest,const string & wild){
         return usedWild==MATCH_ALL_WILD;
     }
 
-    std::vector<string> tokens;
+    std::vector<StringType> tokens;
 
     boost::split(tokens,usedWild,boost::is_any_of(MATCH_ALL_WILD),
             boost::token_compress_on);
 
-    auto newEnd=std::remove(tokens.begin(),tokens.end(),string(""));
+    auto newEnd=std::remove(tokens.begin(),tokens.end(),StringType(_T("")));
 
     tokens.resize(newEnd-tokens.begin());
 
@@ -50,14 +55,14 @@ bool simpleWildMatch(const string& toTest,const string & wild){
     bool firstNotAny=(usedWild[0]!=MATCH_ALL_WILD[0]);
     bool lastNotAny=(usedWild.back()!=MATCH_ALL_WILD[0]);
 
-    string::size_type searchPos=0;
+    StringType::size_type searchPos=0;
 
-    for(string::size_type i=0;i<tokens.size();++i){
+    for(StringType::size_type i=0;i<tokens.size();++i){
 
         auto & thisWild=tokens[i];
 
-        string::size_type foundPos=toTest.find(thisWild,searchPos);
-        if(foundPos==string::npos){
+        StringType::size_type foundPos=toTest.find(thisWild,searchPos);
+        if(foundPos==StringType::npos){
             return false;
         }
 
@@ -97,42 +102,42 @@ static const char * const LOG_LEVEL_STRING[4]={"[TRACE]","[DEBUG]","[INFO]","[ER
 void ukc_log(LogLevel level,const char *message){
 
     if (level>=ukc_logLevel) {
-        std::cout<<message<<'\n';
+        Cout<<message<<'\n';
     }
 }
 
-void ukc_log(LogLevel level,const string& message){
+void ukc_log(LogLevel level,const StringType& message){
 
     if (level>=ukc_logLevel) {
-        std::cout<<message<<'\n';
+        Cout<<message<<'\n';
     }
 }
 
 void ukc_log(LogLevel level,const char *message,int arg0){
 
     if (level>=ukc_logLevel) {
-        std::cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<'\n';
     }
 }
 
 void ukc_log(LogLevel level,const char *message,int arg0,int arg1){
 
     if (level>=ukc_logLevel) {
-        std::cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
     }
 }
 
 void ukc_log(LogLevel level,const char *message,const char* arg0,const char* arg1){
 
     if (level>=ukc_logLevel) {
-        std::cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
     }
 }
 
-void ukc_log(LogLevel level,const string& message,const char* arg0,const char* arg1){
+void ukc_log(LogLevel level,const StringType& message,const char* arg0,const char* arg1){
 
     if (level>=ukc_logLevel) {
-        std::cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<","<<arg1<<'\n';
     }
 }
 
@@ -140,7 +145,7 @@ void ukc_log(LogLevel level,const string& message,const char* arg0,const char* a
 #elif defined __linux
 void ukc_log(LogLevel level,const char *message ,input_event *evdev_event){
     if (level>=ukc_logLevel) {
-        std::cout<<LOG_LEVEL_STRING[level]<<message<<
+        Cout<<LOG_LEVEL_STRING[level]<<message<<
             libevdev_event_type_get_name(evdev_event->type)
             <<" "<<libevdev_event_code_get_name(evdev_event->type,evdev_event->code)            <<" value :"<<evdev_event->value<<'\n';
     }

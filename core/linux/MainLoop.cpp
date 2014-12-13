@@ -365,7 +365,7 @@ void MainLoop::processInotify(){
 
             ukc_log(DEBUG,"new evdev node found ",event->name);
 
-            InputDevice *inputDevice=InputDevice::tryCreateNew((string(EVENT_INPUT_PATH)+event->name).c_str());
+            InputDevice *inputDevice=InputDevice::tryCreateNew((StringType(EVENT_INPUT_PATH)+event->name).c_str());
 
             if (inputDevice) {
                 ukc_log(DEBUG,"new input device created for ",event->name);

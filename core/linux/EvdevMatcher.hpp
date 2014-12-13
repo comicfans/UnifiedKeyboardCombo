@@ -9,7 +9,7 @@
 class EvdevMatcher :public DeviceMatcher
 {
 public:
-    static constexpr const StringType::value_type* const CLASS_NAME="EvdevMatcher";
+    static constexpr const StringType::value_type* const CLASS_NAME=_T("EvdevMatcher");
 
     static constexpr int PROP_NUMBER=4;
 
@@ -23,7 +23,7 @@ public:
         return CLASS_NAME;
     }
 
-    string wild(WildIndex index)const{return m_wild[index];}
+    const StringType &wild(WildIndex index)const{return m_wild[index];}
 
     virtual EvdevMatcher* deepClone()const override final;
 
@@ -37,8 +37,9 @@ protected:
     virtual void readSelf(const TreeType& readFrom) override final;
 
 private:
+    
 
-    string m_wild[PROP_NUMBER]={
+    StringType m_wild[PROP_NUMBER]={
         MATCH_ALL_WILD,MATCH_ALL_WILD,
         MATCH_ALL_WILD,MATCH_ALL_WILD};
 
