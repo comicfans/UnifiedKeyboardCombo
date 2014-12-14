@@ -12,14 +12,17 @@
 using std::vector;
 
 #ifdef _WIN32
-    static auto &Cout=std::wcout;
-    static auto &Cin=std::wcin;
+    //#include <fcntl.h>
+    //#include <io.h>
+    //static auto &Cout=std::wcout;
+    //static auto &Cin=std::wcin;
     #define MAIN_ENTRY wmain
 #else
-    static auto &Cout=std::cout;
-    static auto &Cin=std::cin;
     #define MAIN_ENTRY main
 #endif
+
+    static auto &Cout=std::cout;
+    static auto &Cin=std::cin;
 
 int MAIN_ENTRY(int argc, StringType::value_type* argv[])
 {
@@ -36,7 +39,11 @@ int MAIN_ENTRY(int argc, StringType::value_type* argv[])
     
     
     for(size_t i=0;i<list.size();++i){
-        Cout<<"index "<<i<<":"<<list[i]->description()<<"\n";
+        auto desc=list[i]->description();
+        auto length=desc.length()*4;
+        char converted[length];
+        std::wcstombs(converted,desc.data(),length);   
+        Cout<<"index "<<i<<":"<<converted<<std::endl;
     }
 
     Cout<<"choose which devices you want to use as input source \n"
@@ -45,7 +52,7 @@ int MAIN_ENTRY(int argc, StringType::value_type* argv[])
         <<" used as virtual unified keyboard input)\n"
         <<"please note: dumb map can makes input device totally none-work";
 
-    StringType selected;
+    std::string selected;
 
     getline(Cin,selected);
 
