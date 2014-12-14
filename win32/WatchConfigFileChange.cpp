@@ -69,12 +69,16 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
 
 	WatchThreadParam *p=(WatchThreadParam*)lparam;
 
-    TCHAR fileName[MAX_PATH];
+    TCHAR nameBuff[MAX_PATH];
 
-    GetModuleFileName(NULL,fileName,MAX_PATH);
+    GetModuleFileName(NULL,nameBuff,MAX_PATH);
+
+    StringType fullName=nameBuff;
+     
+    fullName=fullName.substr(0,fullName.find_last_of(_T("\\")));
 
     auto watchHandle=FindFirstChangeNotification(
-            fileName,FALSE,
+            fullName.data(),FALSE,
             FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_LAST_WRITE
             );
 
@@ -97,7 +101,9 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
 
         switch(waitStatus){
             case WAIT_OBJECT_0:{
-                readFileChange(watchHandle);
+                if(readFileChange(watchHandle)){
+                    PostMessage(p->mainWnd,WM_CONFIG_CHANGE,0,0);
+                }
                 break;
             }
             case WAIT_OBJECT_0+1:{

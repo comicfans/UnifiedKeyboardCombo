@@ -13,6 +13,8 @@ typedef struct {
 
 DWORD WINAPI watchConfigChangeThread(LPVOID lparam);
 
+constexpr int WM_CONFIG_CHANGE=WM_APP+123;
+
 #ifdef __cplusplus
 }
 #endif

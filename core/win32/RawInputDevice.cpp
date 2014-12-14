@@ -58,7 +58,12 @@ RawInputDevice::DeviceListType RawInputDevice::scanDevices(){
 }
 
 StringType RawInputDevice::description()const{
-    return _T("name : ")+m_name+_T(",vid:")+m_vid+_T(",pid:")+m_pid;
+
+    auto ret=_T("name : ")+m_name;       
+    if(!m_vid.empty()){
+        ret+=_T(",vid:")+m_vid+_T(",pid:")+m_pid;
+    }
+    return ret;
 }
 
 static constexpr const StringType::value_type * const DEVICE_DESC=_T("DeviceDesc");
@@ -127,11 +132,16 @@ RawInputDevice::RawInputDevice(HANDLE device){
     auto &idPath=infos[2];
 
     keyPath=(boost::wformat(
-                LR"(System\CurrentControlSet\Enum\%0%\%1%\%2%)")  
-            %_T("ACPI")%infos[1]%infos[2]).str();    
+                LR"(System\CurrentControlSet\Enum\%s\%s\%s)")  
+            %infos[0]%infos[1]%infos[2]).str();    
 
     DWORD size;
-    if(RegGetValue(HKEY_LOCAL_MACHINE,keyPath.data(),DEVICE_DESC,RRF_RT_REG_EXPAND_SZ,nullptr,nullptr,&size)!=ERROR_SUCCESS){
+
+
+
+    auto er=RegGetValue(HKEY_LOCAL_MACHINE,keyPath.data(),DEVICE_DESC,RRF_RT_REG_SZ,nullptr,nullptr,&size);
+    if(er!=decltype(er)(ERROR_SUCCESS)){
+        ukc_log(UKC_ERROR,_T("error when opening reg to get device info"),er);
         m_handle=nullptr;
         return;
     }
@@ -140,12 +150,15 @@ RawInputDevice::RawInputDevice(HANDLE device){
 
     auto byteSize=size*2;
     StringType::value_type descBuff[byteSize/sizeof(StringType::value_type)*2];
-    if(RegGetValue(HKEY_LOCAL_MACHINE,keyPath.data(),DEVICE_DESC,
-                RRF_RT_REG_EXPAND_SZ,nullptr,descBuff,&byteSize)!=ERROR_SUCCESS){
+    er=RegGetValue(HKEY_LOCAL_MACHINE,keyPath.data(),DEVICE_DESC,
+                RRF_RT_REG_SZ,nullptr,descBuff,&byteSize);
+    if(er!=decltype(er)(ERROR_SUCCESS)){
+        ukc_log(UKC_ERROR,_T("error when opening reg to get device info"),er);
         m_handle=nullptr;
         return;
     }
     m_name=descBuff;
+    m_name=m_name.substr(m_name.find(';')+1);
 }
 
 std::vector<StringType> RawInputDevice::parseDeviceName(const StringType& name){ 

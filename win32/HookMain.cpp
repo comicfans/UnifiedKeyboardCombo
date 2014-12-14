@@ -59,6 +59,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 		return FALSE;
 	}
 
+    
 	//hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_HOOKINGRAWINPUTDEMO));
 
 	// Main message loop:
@@ -71,6 +72,8 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
 	return (int) msg.wParam;
 }
 
+    
+WatchThreadParam param;
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -137,6 +140,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	// Set up the keyboard Hook
 	InstallHook (hWnd);
+
+    param.quitEvent=CreateEvent(NULL,FALSE,FALSE,NULL);
+
+    CreateThread(nullptr,0,watchConfigChangeThread,&param,0,nullptr);
 
 	return TRUE;
 }
@@ -331,6 +338,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		break;}
 	case WM_DESTROY:
 		UninstallHook ();
+        SetEvent(param.quitEvent);
+
 		PostQuitMessage(0);
 		break;
 	default:
