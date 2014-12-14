@@ -6,60 +6,51 @@
 #include <winbase.h>
 
 #include "Profile.hpp"
+#include "Utility.hpp"
+
+static FILETIME lastWriteTime={0,0};
+static StringType configFullPath;
 
 static bool readFileChange(HANDLE watchHandle){
 
-    //WTF ?
-    /* 
-     FindFirstChangeNotification handle as input for ReadDirectoryChangesW
-    what undocumented is, is that you can also use a FindFirstChangeNotification handle in the call to ReadDirectoryChangesW
+            
+    ukc_log(UKC_TRACE,_T("file changed"),_T("")); 
+                
+    //http://forums.codeguru.com/showthread.php?441395-FindFirstChangeNotification-amp-ReadDirectoryChangesW-blocks-execution
+    //WTF ? ReadDirectoryChangesW always block until next changes happened ?
+    //I ends up with check last_write_time every time
 
-    so this works:
+    HANDLE configFileHandle=CreateFile(configFullPath.data(),GENERIC_READ,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,nullptr);
 
-    lv_hDirNotify = FindFirstChangeNotification(... lv_hEvent);
-
-    ...
-
-    if (WaitForSingleObject(lv_hEvent, INFINITE) == 0)
-    {
-    ReadDirectoryChangesW(lv_hDirNotify, ...);
-
-    FindNextChangeNotification(lv_hDirNotify);
-    }
-
-
-    tested on XP-SP3
-
-
-    .. althrough there is some mixup as Findxxx gives faster/more notifications then Readxxx and therefore the Readxxx will hang after some changes 
-    */
-
-    static const auto BUFFER_SIZE=10000;
-    std::unique_ptr<DWORD[]> buffer(new DWORD[BUFFER_SIZE]);
-
-    DWORD bufferUsed=0;
-
-    ReadDirectoryChangesW(watchHandle,buffer.get(),BUFFER_SIZE,FALSE,
-            FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_LAST_WRITE|FILE_NOTIFY_CHANGE_CREATION,
-            &bufferUsed,NULL,NULL);
-
-    int leftSize=bufferUsed;
-
-
-    while(leftSize>sizeof(FILE_NOTIFY_INFORMATION)){
-    
-        FILE_NOTIFY_INFORMATION *change=reinterpret_cast<FILE_NOTIFY_INFORMATION*>(buffer.get()+bufferUsed-leftSize);
-
-        if(wcsncmp(DEFAULT_CONFIG_JSON,change->FileName,change->FileNameLength)==0){
+    if(configFileHandle==INVALID_HANDLE_VALUE){
+        ukc_log(UKC_DEBUG,configFullPath,_T("not exist"));
+        //open failed
+        if(lastWriteTime.dwLowDateTime!=0 || lastWriteTime.dwHighDateTime !=0){
+            //deleted or being changing without share ,treate as changed 
+            ukc_log(UKC_DEBUG,configFullPath,_T(" deleted"));
+            lastWriteTime={0,0};
             return true;
         }
-
-        if(change->NextEntryOffset==0){
-            return false;
-        }
-
-        leftSize-=change->NextEntryOffset;
+            
+        return false;
     }
+
+
+    //file opened
+    FILETIME modifiedTime;
+    GetFileTime(configFileHandle,nullptr,nullptr,&modifiedTime);
+    CloseHandle(configFileHandle);
+
+    if(CompareFileTime(&lastWriteTime,&modifiedTime)!=0){
+        ukc_log(UKC_DEBUG,DEFAULT_CONFIG_JSON,_T(" changed"));
+        lastWriteTime=modifiedTime;
+        return true;
+    }
+
+        
+    ukc_log(UKC_DEBUG,DEFAULT_CONFIG_JSON,_T(" same"));
 
     return false;
 
@@ -76,6 +67,18 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
     StringType fullName=nameBuff;
      
     fullName=fullName.substr(0,fullName.find_last_of(_T("\\")));
+
+    configFullPath=fullName+_T("\\")+DEFAULT_CONFIG_JSON;
+
+
+    HANDLE configFileHandle=CreateFile(configFullPath.data(),GENERIC_READ,
+            FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,nullptr);
+
+    if(configFileHandle!=INVALID_HANDLE_VALUE){
+        GetFileTime(configFileHandle,nullptr,nullptr,&lastWriteTime);
+        CloseHandle(configFileHandle);
+    }
 
     auto watchHandle=FindFirstChangeNotification(
             fullName.data(),FALSE,
@@ -104,6 +107,7 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
                 if(readFileChange(watchHandle)){
                     PostMessage(p->mainWnd,WM_CONFIG_CHANGE,0,0);
                 }
+                FindNextChangeNotification(watchHandle);
                 break;
             }
             case WAIT_OBJECT_0+1:{

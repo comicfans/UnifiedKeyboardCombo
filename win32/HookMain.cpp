@@ -7,9 +7,11 @@
 */
 
 #include <deque>
+#include <signal.h>
 #include <cstdio>
 #include "HookMain.h"
 #include "HookDll.h"
+#include "Utility.hpp"
 
 
 #include "WatchConfigFileChange.h"
@@ -75,6 +77,13 @@ int APIENTRY wWinMain(HINSTANCE hInstance,
     
 WatchThreadParam param;
 
+
+void SignalHandler(int signal)
+{
+    UninstallHook();
+}
+ 
+
 //
 //  FUNCTION: MyRegisterClass()
 //
@@ -138,10 +147,19 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	rawInputDevice[0].hwndTarget = hWnd;
 	RegisterRawInputDevices (rawInputDevice, 1, sizeof (rawInputDevice[0]));
 
+    signal(SIGABRT,SignalHandler);
+    signal(SIGSEGV,SignalHandler);
+    signal(SIGINT,SignalHandler);
+    signal(SIGTERM,SignalHandler);
 	// Set up the keyboard Hook
-	InstallHook (hWnd);
+	auto res=InstallHook (hWnd);
+
+    if(!res){
+        return FALSE;
+    }
 
     param.quitEvent=CreateEvent(NULL,FALSE,FALSE,NULL);
+    param.mainWnd=hWnd;
 
     CreateThread(nullptr,0,watchConfigChangeThread,&param,0,nullptr);
 
@@ -164,6 +182,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	switch (message)
 	{
+        case WM_CONFIG_CHANGE:
+            {
+
+                ukc_log(UKC_INFO,_T("config file changed"),_T(" message received")); 
+                return 1;
+
+            }
 	// Raw Input Message
 	case WM_INPUT:
 	{
