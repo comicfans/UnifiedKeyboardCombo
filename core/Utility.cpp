@@ -97,20 +97,22 @@ void setLogLevel(LogLevel level){
     ukc_logLevel=level;
 }
 
+using std::endl;
+
 static const StringType::value_type* const LOG_LEVEL_STRING[4]={
     _T("[UKC_TRACE]"),_T("[UKC_DEBUG]"),_T("[UKC_INFO]"),_T("[UKC_ERROR]")};
 
 void ukc_log(LogLevel level,const StringType::value_type *message){
 
     if (level>=ukc_logLevel) {
-        Cout<<message<<'\n';
+        Cout<<message<<endl;
     }
 }
 
 void ukc_log(LogLevel level,const StringType& message){
 
     if (level>=ukc_logLevel) {
-        Cout<<message<<'\n';
+        Cout<<message<<endl;
     }
 }
 
@@ -118,21 +120,21 @@ void ukc_log(LogLevel level,const StringType::value_type *const message,
         int arg0){
 
     if (level>=ukc_logLevel) {
-        Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<": "<<arg0<<endl;
     }
 }
 
 void ukc_log(LogLevel level,const StringType::value_type *const message,int arg0,int arg1){
 
     if (level>=ukc_logLevel) {
-        Cout<<LOG_LEVEL_STRING[level]<<message<<_T(": ")<<arg0<<_T(",")<<arg1<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<_T(": ")<<arg0<<_T(",")<<arg1<<endl;
     }
 }
 
 void ukc_log(LogLevel level,const StringType::value_type *message,const StringType::value_type * arg0,const StringType::value_type * arg1){
 
     if (level>=ukc_logLevel) {
-        Cout<<LOG_LEVEL_STRING[level]<<message<<_T(": ")<<arg0<<_T(",")<<arg1<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<_T(": ")<<arg0<<_T(",")<<arg1<<endl;
     }
 }
 
@@ -141,7 +143,7 @@ void ukc_log(LogLevel level,const StringType& message,
         const StringType::value_type* const arg1){
 
     if (level>=ukc_logLevel) {
-        Cout<<LOG_LEVEL_STRING[level]<<message<<_T(": ")<<arg0<<_T(",")<<arg1<<'\n';
+        Cout<<LOG_LEVEL_STRING[level]<<message<<_T(": ")<<arg0<<_T(",")<<arg1<<endl;
     }
 }
 
@@ -151,7 +153,7 @@ void ukc_log(LogLevel level,const char *message ,input_event *evdev_event){
     if (level>=ukc_logLevel) {
         Cout<<LOG_LEVEL_STRING[level]<<message<<
             libevdev_event_type_get_name(evdev_event->type)
-            <<" "<<libevdev_event_code_get_name(evdev_event->type,evdev_event->code)            <<" value :"<<evdev_event->value<<'\n';
+            <<" "<<libevdev_event_code_get_name(evdev_event->type,evdev_event->code)            <<" value :"<<evdev_event->value<<endl;
     }
 }
 #endif
