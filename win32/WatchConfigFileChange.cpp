@@ -11,6 +11,18 @@
 static FILETIME lastWriteTime={0,0};
 static StringType configFullPath;
 
+static void sendChangedMessage(HWND mainWnd){
+    COPYDATASTRUCT toSend;
+    //WTF ULONG_PTR as type ?
+    toSend.dwData=12345;
+    toSend.cbData=sizeof(wchar_t)*(configFullPath.length()+1);
+    toSend.lpData=LPVOID(configFullPath.c_str());
+
+    ukc_log(UKC_INFO,_T("sending config file change info"),_T(""));
+    SendMessage(HWND_BROADCAST,WM_COPYDATA,(WPARAM)mainWnd,(LPARAM)(LPVOID)&toSend);
+    ukc_log(UKC_INFO,_T("sending config file change info complete"),_T(""));
+}
+
 static bool readFileChange(HANDLE watchHandle){
 
             
@@ -105,7 +117,7 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
         switch(waitStatus){
             case WAIT_OBJECT_0:{
                 if(readFileChange(watchHandle)){
-                    PostMessage(p->mainWnd,WM_CONFIG_CHANGE,0,0);
+                    sendChangedMessage(p->mainWnd);
                 }
                 FindNextChangeNotification(watchHandle);
                 break;

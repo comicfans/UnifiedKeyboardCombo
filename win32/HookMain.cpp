@@ -182,13 +182,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	switch (message)
 	{
-        case WM_CONFIG_CHANGE:
-            {
-
-                ukc_log(UKC_INFO,_T("config file changed"),_T(" message received")); 
-                return 1;
-
-            }
 	// Raw Input Message
 	case WM_INPUT:
 	{

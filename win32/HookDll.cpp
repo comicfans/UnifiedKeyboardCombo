@@ -7,6 +7,7 @@
 */
 
 #include <stdio.h>
+#include <string>
 #include <set>
 #include "HookDll.h"
 
@@ -22,6 +23,7 @@ static HINSTANCE instanceHandle=NULL;
 static HHOOK hookHandle=NULL;
 
 static DWORD dwTlsIndex;
+
 
 typedef std::set<HWND> HWNDSet;
 struct TlsData{
@@ -208,6 +210,20 @@ static LRESULT CALLBACK GetMessageProc (int code, WPARAM wParam, LPARAM lParam)
 				return CallNextHookEx(hookHandle,code,wParam,lParam);
 		}
 
+        if(pMSG->message==WM_COPYDATA){
+			return 1;
+            HWND sendWnd=(HWND)wParam;
+            //if(sendWnd==hwndServer){
+                PCOPYDATASTRUCT copyData=(PCOPYDATASTRUCT)lParam;
+                if(copyData->dwData==12345){
+                    //just verify this . if other fake this ,we don't know
+                    std::wstring configFile=(wchar_t*)copyData->lpData;
+                    //filter this, passthrough others
+                    return 1;
+                }
+            //}
+        }
+
 
 		return CallNextHookEx(hookHandle,code,wParam,lParam);
 	}
@@ -232,6 +248,10 @@ static LRESULT CALLBACK GetMessageProc (int code, WPARAM wParam, LPARAM lParam)
 BOOL InstallHook (HWND hwndParent)
 {
 	
+    if(hwndServer!=NULL){
+        return FALSE;
+    }
+    hwndServer=hwndParent;
 
 	// Register keyboard Hook
 	hookHandle = SetWindowsHookEx (WH_GETMESSAGE, (HOOKPROC)GetMessageProc, instanceHandle, 0);
