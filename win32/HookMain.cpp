@@ -20,8 +20,8 @@
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
-TCHAR szTitle[MAX_LOADSTRING];					// The title bar text
-TCHAR szWindowClass[MAX_LOADSTRING]=L"abccc";			// the main window class name
+TCHAR szTitle[MAX_LOADSTRING]=L"VirtualKeyboardCombo";					// The title bar text
+TCHAR szWindowClass[MAX_LOADSTRING]=L"VirtualKeyboardCombo";			// the main window class name
 
 // HWND of main executable
 HWND mainHwnd;

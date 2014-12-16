@@ -131,6 +131,11 @@ BOOL APIENTRY DllMain (HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 	return TRUE;
 }
 
+#ifdef _WIN64
+#define GetMessageProc GetMessageProc64
+#else
+#define GetMessageProc GetMessageProc32
+#endif
 
 static LRESULT CALLBACK GetMessageProc (int code, WPARAM wParam, LPARAM lParam)
 {
