@@ -10,3 +10,5 @@ gcc_debug
 clang
 clang_mingw
 mingw
+msvc64/*
+mingw32/*

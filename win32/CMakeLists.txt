@@ -3,7 +3,7 @@ add_library(ukc_hook
     HookDll.cpp
     )
 
-target_link_libraries(ukc_hook)
+target_link_libraries(ukc_hook ukc_core)
 
 if(MSVC)
     set_target_properties(ukc_hook PROPERTIES PREFIX "lib")
@@ -27,5 +27,3 @@ target_link_libraries(ukc_hook_main ukc_hook ukc_core)
 add_executable(ToKeyMap ToKeyMap.cpp)
 
 
-add_executable(BitnessHelper BitnessHelper.cpp)
-target_link_libraries(BitnessHelper ukc_hook)

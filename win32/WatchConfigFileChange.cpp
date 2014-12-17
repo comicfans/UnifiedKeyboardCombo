@@ -9,21 +9,9 @@
 #include "Utility.hpp"
 
 static FILETIME lastWriteTime={0,0};
-static StringType configFullPath;
 
-static void sendChangedMessage(HWND mainWnd){
-    COPYDATASTRUCT toSend;
-    //WTF ULONG_PTR as type ?
-    toSend.dwData=12345;
-    toSend.cbData=sizeof(wchar_t)*(configFullPath.length()+1);
-    toSend.lpData=LPVOID(configFullPath.c_str());
 
-    ukc_log(UKC_INFO,_T("sending config file change info"),_T(""));
-    SendMessage(HWND_BROADCAST,WM_COPYDATA,(WPARAM)mainWnd,(LPARAM)(LPVOID)&toSend);
-    ukc_log(UKC_INFO,_T("sending config file change info complete"),_T(""));
-}
-
-static bool readFileChange(HANDLE watchHandle){
+static bool readFileChange(HANDLE watchHandle,const StringType& configFullPath){
 
             
     ukc_log(UKC_TRACE,_T("file changed"),_T("")); 
@@ -72,18 +60,7 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
 
 	WatchThreadParam *p=(WatchThreadParam*)lparam;
 
-    TCHAR nameBuff[MAX_PATH];
-
-    GetModuleFileName(NULL,nameBuff,MAX_PATH);
-
-    StringType fullName=nameBuff;
-     
-    fullName=fullName.substr(0,fullName.find_last_of(_T("\\")));
-
-    configFullPath=fullName+_T("\\")+DEFAULT_CONFIG_JSON;
-
-
-    HANDLE configFileHandle=CreateFile(configFullPath.data(),GENERIC_READ,
+    HANDLE configFileHandle=CreateFile(p->configFullPath.data(),GENERIC_READ,
             FILE_SHARE_READ|FILE_SHARE_WRITE,nullptr,OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL,nullptr);
 
@@ -93,14 +70,14 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
     }
 
     auto watchHandle=FindFirstChangeNotification(
-            fullName.data(),FALSE,
+            p->configDirPath.c_str(),FALSE,
             FILE_NOTIFY_CHANGE_FILE_NAME|FILE_NOTIFY_CHANGE_LAST_WRITE
             );
 
     if ((watchHandle==INVALID_HANDLE_VALUE) || 
             //WTF?
             (watchHandle == nullptr))    {
-        return 1;
+        return 0;
         
     }
 
@@ -116,8 +93,10 @@ DWORD WINAPI watchConfigChangeThread(LPVOID lparam){
 
         switch(waitStatus){
             case WAIT_OBJECT_0:{
-                if(readFileChange(watchHandle)){
-                    sendChangedMessage(p->mainWnd);
+                if(readFileChange(watchHandle,p->configFullPath)){
+                    ukc_log(UKC_INFO,_T("sending config file change info"),_T(""));
+                    PostMessage(HWND_BROADCAST,p->ukcConfigChangeMessage,0,0);
+                    ukc_log(UKC_INFO,_T("sending config file change info complete"),_T(""));
                 }
                 FindNextChangeNotification(watchHandle);
                 break;

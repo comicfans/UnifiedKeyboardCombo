@@ -12,6 +12,7 @@
 #include "HookMain.h"
 #include "HookDll.h"
 #include "Utility.hpp"
+#include "Profile.hpp"
 
 
 #include "WatchConfigFileChange.h"
@@ -34,6 +35,9 @@ const WCHAR * const numericKeyboardDeviceName = L"\\\\?\\HID#VID_04D9&PID_1203&M
 // Buffer for the decisions whether to block the input with Hook
 std::deque<DecisionRecord> decisionBuffer;
 
+UINT ukcConfigChangeMessage;
+
+static StringType configFullPath;
 // Forward declarations of functions included in this code module:
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
@@ -140,19 +144,26 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	UpdateWindow(hWnd);
 
 	// Register for receiving Raw Input for keyboards
-	RAWINPUTDEVICE rawInputDevice[1];
-	rawInputDevice[0].usUsagePage = 1;
-	rawInputDevice[0].usUsage = 6;
-	rawInputDevice[0].dwFlags = RIDEV_INPUTSINK;
-	rawInputDevice[0].hwndTarget = hWnd;
-	RegisterRawInputDevices (rawInputDevice, 1, sizeof (rawInputDevice[0]));
 
     signal(SIGABRT,SignalHandler);
     signal(SIGSEGV,SignalHandler);
     signal(SIGINT,SignalHandler);
     signal(SIGTERM,SignalHandler);
 	// Set up the keyboard Hook
-	auto res=InstallHook (hWnd);
+
+    ukcConfigChangeMessage=RegisterWindowMessage(UKC_CONFIG_CHANGE_MESSAGE_KEY);
+
+    TCHAR nameBuff[MAX_PATH];
+
+    GetModuleFileName(NULL,nameBuff,MAX_PATH);
+
+    StringType fullName=nameBuff;
+     
+    fullName=fullName.substr(0,fullName.find_last_of(_T("\\")));
+
+    configFullPath=fullName+_T("\\")+DEFAULT_CONFIG_JSON;
+
+	auto res=InstallHook (hWnd,configFullPath.c_str(),ukcConfigChangeMessage);
 
     if(!res){
         return FALSE;
@@ -160,6 +171,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
     param.quitEvent=CreateEvent(NULL,FALSE,FALSE,NULL);
     param.mainWnd=hWnd;
+    param.configDirPath=fullName;
+    param.configFullPath=configFullPath;
+    param.ukcConfigChangeMessage=ukcConfigChangeMessage;
 
     CreateThread(nullptr,0,watchConfigChangeThread,&param,0,nullptr);
 
@@ -185,43 +199,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	// Raw Input Message
 	case WM_INPUT:
 	{
-		UINT bufferSize;
-
-		// Prepare buffer for the data
-		GetRawInputData ((HRAWINPUT)lParam, RID_INPUT, NULL, &bufferSize, sizeof (RAWINPUTHEADER));
-		LPBYTE dataBuffer = new BYTE[bufferSize];
-		// Load data into the buffer
-		GetRawInputData((HRAWINPUT)lParam, RID_INPUT, dataBuffer, &bufferSize, sizeof (RAWINPUTHEADER));
-
-		RAWINPUT* raw = (RAWINPUT*)dataBuffer;
-
-		// Get the virtual key code of the key and report it
-		USHORT virtualKeyCode = raw->data.keyboard.VKey;
-		USHORT keyPressed = raw->data.keyboard.Flags & RI_KEY_BREAK ? 0 : 1;
-		WCHAR text[128];
-		swprintf (text, 128, L"Raw Input: %X (%d)\n", virtualKeyCode, keyPressed);
-		OutputDebugString (text);
-
-		// Prepare string buffer for the device name
-		GetRawInputDeviceInfo (raw->header.hDevice, RIDI_DEVICENAME, NULL, &bufferSize);
-		WCHAR* stringBuffer = new WCHAR[bufferSize];
-
-		// Load the device name into the buffer
-		GetRawInputDeviceInfo (raw->header.hDevice, RIDI_DEVICENAME, stringBuffer, &bufferSize);
-
-		// Check whether the key struck was a "7" on a numeric keyboard, and remember the decision whether to block the input
-		if (virtualKeyCode == 0x67 && wcscmp (stringBuffer, numericKeyboardDeviceName) == 0)
-		{
-			decisionBuffer.push_back (DecisionRecord (virtualKeyCode, TRUE));
-		}
-		else
-		{
-			decisionBuffer.push_back (DecisionRecord (virtualKeyCode, FALSE));
-		}
-
-		delete[] stringBuffer;
-		delete[] dataBuffer; 
-		return 0;
+	
 	}
 
 	// Message from Hooking DLL

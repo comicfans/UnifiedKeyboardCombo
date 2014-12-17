@@ -23,6 +23,8 @@
 
  
 #include "Utility.hpp"
+
+static constexpr int WIN_KEY_CNT=256;
     
 RawInputDevice::DeviceListType RawInputDevice::scanDevices(){
     UINT number;
@@ -69,6 +71,8 @@ StringType RawInputDevice::description()const{
 static constexpr const StringType::value_type * const DEVICE_DESC=_T("DeviceDesc");
 
 RawInputDevice::RawInputDevice(HANDLE device){
+
+    m_keyMaps.reset(new uint8_t[WIN_KEY_CNT]);
 
     m_handle=device;
 
@@ -173,4 +177,66 @@ std::vector<StringType> RawInputDevice::parseDeviceName(const StringType& name){
     boost::split(result,slashStripped,boost::is_any_of(_T("#")),
             boost::token_compress_on);
     return result;
+}
+
+bool RawInputDevice::RawInputDevice::configure(const vector<KeyMap> &keyMaps,
+        bool disableNoneKeyEvent,bool disableUnmappedKey){
+
+    m_disableUnmappedKey=disableUnmappedKey;
+
+    if(m_disableUnmappedKey){
+        std::fill_n(m_keyMaps.get(),m_keyMaps.get()+WIN_KEY_CNT,0);
+    }else{
+        for (int i = 0; i < WIN_KEY_CNT; ++i) {
+            //linux key map is dense map
+            m_keyMaps[i]=i;
+        }
+    }
+
+    for(auto &keyMap:keyMaps){
+        ukc_log(UKC_TRACE,_T("map key "),keyMap.fromKey.c_str(),keyMap.toKey.c_str());
+
+        int fromKeyCode=keyMap.fromKeyCode();
+
+        if (fromKeyCode==-1) {
+            ukc_log(UKC_ERROR,_T("bad from key name"),keyMap.fromKey.c_str());
+            continue;
+        }
+
+        int toKeyCode=keyMap.toKeyCode();
+
+        if (toKeyCode==-1) {
+            ukc_log(UKC_ERROR,_T("bad to key name"),keyMap.toKey.c_str());
+            continue;
+        }
+
+        BOOST_ASSERT(
+                fromKeyCode>=0 && fromKeyCode<WIN_KEY_CNT && 
+                toKeyCode>=0 && toKeyCode<WIN_KEY_CNT);
+
+        m_keyMaps[fromKeyCode]=toKeyCode;
+    }
+
+    m_disableNoneKeyEvent=disableNoneKeyEvent;
+
+    return true;
+
+}
+
+    
+void RawInputDevice::nextRaw(HWND hwnd,RAWINPUT *raw,WPARAM wParam,LPARAM lParam){
+    // Get the virtual key code of the key and report it
+    USHORT virtualKeyCode = raw->data.keyboard.VKey;
+    USHORT keyPressed = raw->data.keyboard.Flags & RI_KEY_BREAK ? 0 : 1;
+    WCHAR text[128];
+    swprintf (text, 128, L"Raw Input: %X (%d)\n", virtualKeyCode, keyPressed);
+    OutputDebugString (text);
+
+    // Prepare string buffer for the device name
+
+
+}
+
+    
+void RawInputDevice::nextKey(HHOOK hookHandle,UINT message,WPARAM wParam,LPARAM lParam){
 }
