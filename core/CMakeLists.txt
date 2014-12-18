@@ -26,6 +26,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message("${EVDEV_LIBRARIES}")
     target_link_libraries(ukc_core ${EVDEV_LIBRARY})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set_target_properties(ukc_core PROPERTIES   COMPILE_FLAGS "-DUNICODE -D_UNICODE -municode")
 endif()
 
 

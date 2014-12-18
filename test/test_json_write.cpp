@@ -7,7 +7,11 @@
 
 #include <boost/property_tree/json_parser.hpp>
 
+#ifdef _WIN32
+int wmain(int argc, char *argv[])
+#else
 int main(int argc, char *argv[])
+#endif
 {
 
     MultiMatcher top;

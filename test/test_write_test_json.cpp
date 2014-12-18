@@ -12,16 +12,21 @@ int main(int argc, char *argv[])
 
     EvdevMatcher *matcher=new EvdevMatcher;
 
-    matcher->setWild(EvdevMatcher::VID,"0433");
-    matcher->setWild(EvdevMatcher::PID,"0004");
+    matcher->setWild(EvdevMatcher::VID,_T("0433"));
+    matcher->setWild(EvdevMatcher::PID,_T("0004"));
 
     profile.setMatcher(matcher);
 
     
     KeyMap keyMap;
 
+#ifdef _WIN32
     keyMap.fromKey="KEY_W";
     keyMap.toKey="KEY_P";
+#else
+    keyMap.fromKey=_T("W");
+    keyMap.toKey=_T("P");
+#endif
 
     profile.addKeyMap(keyMap);
 

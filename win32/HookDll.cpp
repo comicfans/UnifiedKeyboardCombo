@@ -384,6 +384,7 @@ BOOL UninstallHook ()
 			return FALSE;
 		}
 	}
+
 	
 	hookHandle = NULL;
 	return TRUE;

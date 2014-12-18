@@ -1,21 +1,20 @@
 #include <gtest/gtest.h>
 #include "Utility.hpp"
 
-#include <string>
+#include "StringType.hpp"
 
-using std::string;
 
-string copyStrip(const string& input){
-    string toStrip(input);
+StringType copyStrip(const StringType& input){
+    StringType toStrip(input);
     stripWildString(toStrip);
     return toStrip;
 }
 
 TEST(UtilityTest,testStripNone){
 
-    string orig("ajsdfasdf");
+    StringType orig(_T("ajsdfasdf"));
 
-    string result=copyStrip(orig);
+    StringType result=copyStrip(orig);
 
     ASSERT_EQ(orig,result);
  
@@ -23,9 +22,9 @@ TEST(UtilityTest,testStripNone){
 
 TEST(UtilityTest,testStripNoneWithMatchAll){
 
-    string orig("a*a");
+    StringType orig(_T("a*a"));
 
-    string result=copyStrip(orig);
+    StringType result=copyStrip(orig);
 
     ASSERT_EQ(orig,result);
  
@@ -33,24 +32,24 @@ TEST(UtilityTest,testStripNoneWithMatchAll){
 
 TEST(UtilityTest,testStripRemove){
 
-    string orig("a**a");
+    StringType orig("a**a");
 
     stripWildString(orig);
 
-    ASSERT_EQ(orig,string("a*a"));
+    ASSERT_EQ(orig,StringType(_T("a*a")));
  
 }
 
 TEST(UtilityTest,testMatchAny){
-    ASSERT_TRUE(simpleWildMatch("abc","*"));
-    ASSERT_TRUE(simpleWildMatch("abc","a*"));
-    ASSERT_TRUE(simpleWildMatch("abc","a*c"));
-    ASSERT_TRUE(simpleWildMatch("abc","*b*"));
-    ASSERT_TRUE(simpleWildMatch("abc","a*"));
-    ASSERT_TRUE(simpleWildMatch("abc","*c"));
-    ASSERT_TRUE(simpleWildMatch("abc","**"));
-    ASSERT_FALSE(simpleWildMatch("abc","bc"));
-    ASSERT_FALSE(simpleWildMatch("abc","c"));
-    ASSERT_FALSE(simpleWildMatch("abc","a"));
-    ASSERT_FALSE(simpleWildMatch("Power Button","*CHESEN*"));
+    ASSERT_TRUE(simpleWildMatch(_T("abc"),_T("*")));
+    ASSERT_TRUE(simpleWildMatch(_T("abc"),_T("a*")));
+    ASSERT_TRUE(simpleWildMatch(_T("abc"),_T("a*c")));
+    ASSERT_TRUE(simpleWildMatch(_T("abc"),_T("*b*")));
+    ASSERT_TRUE(simpleWildMatch(_T("abc"),_T("a*")));
+    ASSERT_TRUE(simpleWildMatch(_T("abc"),_T("*c")));
+    ASSERT_TRUE(simpleWildMatch(_T("abc"),_T("**")));
+    ASSERT_FALSE(simpleWildMatch(_T("abc"),_T("bc")));
+    ASSERT_FALSE(simpleWildMatch(_T("abc"),_T("c")));
+    ASSERT_FALSE(simpleWildMatch(_T("abc"),_T("a")));
+    ASSERT_FALSE(simpleWildMatch(_T("Power Button"),_T("*CHESEN*")));
 }

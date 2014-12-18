@@ -239,4 +239,11 @@ void RawInputDevice::nextRaw(HWND hwnd,RAWINPUT *raw,WPARAM wParam,LPARAM lParam
 
     
 void RawInputDevice::nextKey(HHOOK hookHandle,UINT message,WPARAM wParam,LPARAM lParam){
+    USHORT virtualKeyCode=wParam;
+
+    WCHAR text[128];
+    USHORT keyPressed= (message==WM_KEYDOWN || message==WM_SYSKEYDOWN);
+    swprintf (text, 128, L"key : %X (%d)\n", virtualKeyCode, keyPressed);
+    OutputDebugString (text);
+
 }

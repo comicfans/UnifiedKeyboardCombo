@@ -9,7 +9,12 @@ TEST(ScanDeviceTest,scan){
     auto list=InputDevice::scanDevices();
 
     for(auto &dev:list){
-        std::cout<<dev->description()<<'\n';
+#ifdef _WIN32
+        std::wcout
+#else
+        std::cout
+#endif
+            <<dev->description()<<std::endl;
     }
  
 }
