@@ -1,14 +1,31 @@
 #include "KeyMap.hpp"
+#include "linux/UinputKeyboard.hpp"
+#include <algorithm>
 
 #include <libevdev/libevdev.h>
 
-unsigned int KeyMap::nameToCode(const std::string& name){
+unsigned int KeyMap::toKeyCode()const{
 
-    return libevdev_event_code_from_name_n(EV_KEY,name.c_str(),name.length());
+    if (isMouseRel()){
+        return UinputKeyboard::mouseRelActionNameToCode(toKey); 
+    }
+
+    return libevdev_event_code_from_name_n(EV_KEY,toKey.c_str(),toKey.length());
 }
 
-std::string KeyMap::codeToName(unsigned int code){
 
-    return libevdev_event_code_get_name(EV_KEY,code);
+    
+unsigned int KeyMap::fromKeyCode()const{
+
+    return libevdev_event_code_from_name_n(EV_KEY,fromKey.c_str(),fromKey.length());
+}
+
+static const char REL_PREFIX[]="MOUSE_"; 
+
+
+bool KeyMap::isMouseRel()const{
+
+    return (toKey.size()>=6) && 
+        std::equal(toKey.begin(),toKey.begin()+6,REL_PREFIX); 
 }
 

@@ -7,15 +7,13 @@ struct KeyMap{
 
     std::string fromKey;
 
-    unsigned int fromKeyCode()const{return nameToCode(fromKey);}
+    unsigned int fromKeyCode()const; 
 
     std::string toKey;
 
-    unsigned int toKeyCode()const{return nameToCode(toKey);}
+    unsigned int toKeyCode()const; 
 
-    static unsigned int nameToCode(const std::string& name);
-
-    static std::string codeToName(unsigned int code);
+    bool isMouseRel()const; 
 };
 
 

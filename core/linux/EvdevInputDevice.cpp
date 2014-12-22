@@ -17,6 +17,10 @@
 
 #include <libevdev/libevdev.h>
 #include <libevdev/libevdev-uinput.h>
+
+
+static constexpr int MAPPED_NUMBER=KEY_CNT+ 
+    UinputKeyboard::MOUSE_REL_TYPE_COUNT; 
  
 EvdevInputDevice::EvdevInputDevice(string name,string vid,string pid,
             string physical,string bus,string filename):
@@ -31,7 +35,6 @@ EvdevInputDevice::EvdevInputDevice(string name,string vid,string pid,
 
 EvdevInputDevice::EvdevInputDevice(){
     m_keyMaps.reset(new uint16_t[KEY_CNT]);
-    
 }
   
 
@@ -226,7 +229,7 @@ bool EvdevInputDevice::configure(const vector<KeyMap> & keyMaps,
 
         BOOST_ASSERT(
                 fromKeyCode>=0 && fromKeyCode<KEY_CNT && 
-                toKeyCode>=0 && toKeyCode<KEY_CNT);
+                toKeyCode>=0 && toKeyCode<MAPPED_NUMBER);
 
         m_keyMaps[fromKeyCode]=toKeyCode;
     }
@@ -267,11 +270,21 @@ bool EvdevInputDevice::processEvent(){
 
                 //mapped key
                 if(toKeyCode!=KEY_RESERVED){
-
-                    ev.code=toKeyCode;
-                    ukc_log(TRACE,"map to key ",&ev);
-
-                    UinputKeyboard::instance().postKeyEvent(toKeyCode,ev.value);
+                    if (toKeyCode<KEY_CNT){
+                        ev.code=toKeyCode;
+                        ukc_log(TRACE,"map to key ",&ev);
+                        UinputKeyboard::instance().postKeyEvent(toKeyCode,ev.value);
+                    }else{
+                        if (ev.value>=1)
+                        {
+                            ukc_log(TRACE,"map to mouse",toKeyCode-KEY_CNT); 
+                            UinputKeyboard::instance().postMouseEvent(
+                                UinputKeyboard::MouseRelAction(toKeyCode)); 
+                            
+                        }else{
+                            ukc_log(TRACE,"map to mouse but is key release, dropped",toKeyCode-KEY_CNT); 
+                        }
+                    }
 
                     continue;
                 }
