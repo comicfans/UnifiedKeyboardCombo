@@ -445,7 +445,6 @@ void MainLoop::processConfigChange(const inotify_event * event){
             return;     
         }
 
-        BOOST_ASSERT(false); 
     }
 
     if (event->wd==m_watch[WATCH_CWD]){
