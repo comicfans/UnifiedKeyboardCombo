@@ -35,16 +35,16 @@ int main(int argc, char *argv[])
    
 
     libevdev_uinput_write_event(m_uinputDev,EV_KEY,KEY_W,1);
-    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,NULL);
+    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,0);
 
     libevdev_uinput_write_event(m_uinputDev,EV_KEY,KEY_W,0);
-    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,NULL);
+    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,0);
 
     libevdev_uinput_write_event(m_uinputDev,EV_KEY,KEY_W,1);
-    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,NULL);
+    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,0);
 
     libevdev_uinput_write_event(m_uinputDev,EV_KEY,KEY_W,0);
-    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,NULL);
+    libevdev_uinput_write_event(m_uinputDev,EV_SYN,SYN_REPORT,0);
 
     libevdev_uinput_destroy(m_uinputDev);
 
