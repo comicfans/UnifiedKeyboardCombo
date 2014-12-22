@@ -58,7 +58,6 @@ createSignalFd()
 }
 
 void MainLoop::pollAll(){
-    epoll_event ev;
     for(auto it=m_currentDevices.begin(),end=m_currentDevices.end();
             it!=end;){
 
@@ -337,7 +336,10 @@ void MainLoop::processInotify(){
     ukc_log(INFO,"inotify received","");
 
     unsigned int avail;
-    ioctl(m_inotifyFd, FIONREAD, &avail);
+    int rc=ioctl(m_inotifyFd, FIONREAD, &avail);
+    if(rc!=0){
+        ukc_log(ERROR,"erro when getting inotify buffersize",strerror(errno)); 
+    }
 
     char buffer[avail];
     const int readLength=read(m_inotifyFd, buffer, avail);
@@ -353,33 +355,44 @@ void MainLoop::processInotify(){
 
     inotify_event *event = (inotify_event *)buffer;
 
+    bool atLeastOne=false; 
     //at least one
     while (true)
     {
+         
+        char* pTest=reinterpret_cast<char*>(event); 
 
-        if (event->wd==m_watch[WATCH_INPUT] && 
-            (strncmp(event->name,"event",5)==0)){
-            //new input device created
+        BOOST_ASSERT(pTest<buffer+avail); 
 
-            BOOST_ASSERT(event->mask & IN_CREATE);
+        if (event->wd==m_watch[WATCH_INPUT]){
+            if(strncmp(event->name,"event",5)==0){
+                //new input device created
 
-            ukc_log(DEBUG,"new evdev node found ",event->name);
+                atLeastOne=true; 
+                BOOST_ASSERT(event->mask & IN_CREATE);
 
-            InputDevice *inputDevice=InputDevice::tryCreateNew((string(EVENT_INPUT_PATH)+event->name).c_str());
+                ukc_log(DEBUG,"new evdev node found ",event->name);
 
-            if (inputDevice) {
-                ukc_log(DEBUG,"new input device created for ",event->name);
-                if(configureAddIfMatch(unique_ptr<InputDevice>(inputDevice))){
+                InputDevice *inputDevice=InputDevice::tryCreateNew((string(EVENT_INPUT_PATH)+event->name).c_str());
 
-                    ukc_log(INFO,"add new device to poll",inputDevice->name().c_str());
-                    if (!inputDevice->registerPoll(m_epollFd)) {
-                        m_currentDevices.erase(inputDevice->evdevFd());
+                if (inputDevice) {
+                    ukc_log(DEBUG,"new input device created for ",event->name);
+                    if(configureAddIfMatch(unique_ptr<InputDevice>(inputDevice))){
+
+                        ukc_log(INFO,"add new device to poll",inputDevice->name().c_str());
+                        if (!inputDevice->registerPoll(m_epollFd)) {
+                            m_currentDevices.erase(inputDevice->evdevFd());
+                        }
                     }
                 }
-            }
 
+            }else{
+                atLeastOne=true; 
+                ukc_log(DEBUG,"new device created, but not evdev based, ignored",event->name); 
+            }
         }else {
                 
+            atLeastOne=true; 
             processConfigChange(event);
             
         }
@@ -398,31 +411,46 @@ void MainLoop::processInotify(){
         if(leftBytes<INOTIFY_EVENT_SIZE+event->len){
             break;
         }
+
+        ukc_log(TRACE,"left bytes :",leftBytes); 
     }
+
+    BOOST_ASSERT(atLeastOne); 
+
 }
 
 void MainLoop::processConfigChange(const inotify_event * event){
+    ukc_log(DEBUG,"file change id",event->wd); 
     if(event->wd==m_watch[WATCH_CONFIG]){
         ukc_log(DEBUG,"config file changed reconfig","");
-        reloadConfig(false);
-        configureAll();
-        pollAll();
+        if (event->mask & IN_ATTRIB) {
+            reloadConfig(false);
+            configureAll();
+            pollAll();
+            return; 
+        }
+        
 
-        if((event->mask & IN_MOVE_SELF)||(event->mask & IN_DELETE_SELF)){
+        if ((event->mask & IN_MOVE_SELF) || (event->mask & IN_DELETE_SELF)){    
+            ukc_log(DEBUG,DEFAULT_CONFIG_JSON,"moved or deleted ");
 
-            ukc_log(DEBUG,DEFAULT_CONFIG_JSON,"deleted or renamed");
             int rc=inotify_rm_watch(m_inotifyFd,m_watch[WATCH_CONFIG]);
             if (rc==-1){
                 ukc_log(ERROR,"remove watch for config file failed ",strerror(errno));
             }
-            m_watch[WATCH_CONFIG]=-1;
+            m_watch[WATCH_CONFIG]=-1;    
 
-            createWatchCwd();
+            createWatchCwd(); 
+
+            return;     
         }
-        return;
+
+        BOOST_ASSERT(false); 
     }
 
     if (event->wd==m_watch[WATCH_CWD]){
+            
+        ukc_log(TRACE,"file change in pwd",event->name);
 
         if(strcmp(event->name,DEFAULT_CONFIG_JSON)==0){
 
@@ -444,6 +472,8 @@ void MainLoop::processConfigChange(const inotify_event * event){
             configureAll();
             pollAll();
         }
+
+        return; 
     }
 
 }
@@ -452,14 +482,19 @@ void MainLoop::createWatchConfig(){
 
     ukc_log(DEBUG,"create watch on", DEFAULT_CONFIG_JSON);
 
+    BOOST_ASSERT(m_watch[WATCH_CONFIG]==-1); 
+
     if((m_watch[WATCH_CONFIG]=inotify_add_watch(m_inotifyFd,
                     DEFAULT_CONFIG_JSON,
                     IN_CLOSE_WRITE|IN_MODIFY|IN_DELETE_SELF
-                    |IN_MOVE_SELF))<0){
+                    |IN_MOVE_SELF|IN_ATTRIB))<0){
         ukc_log(ERROR,"can not create inotify for config ,instead create watch pwd","");
 
         createWatchCwd();
+        return; 
     }
+
+    ukc_log(DEBUG,"create config watch id",m_watch[WATCH_CONFIG]); 
 
 }
 
@@ -469,11 +504,15 @@ void MainLoop::createWatchCwd(){
 
     ukc_log(DEBUG,"create watch on ",pwd);
 
+    BOOST_ASSERT(m_watch[WATCH_CWD]==-1); 
+
     if((m_watch[WATCH_CWD]=inotify_add_watch(m_inotifyFd,pwd,
                     IN_CREATE|IN_MOVED_TO))<0){
 
         ukc_log(ERROR,"can not create inotify watch for ",pwd);
     }
+
+    ukc_log(DEBUG,"cwd watch id",m_watch[WATCH_CWD]); 
 
     free(pwd);
 }
