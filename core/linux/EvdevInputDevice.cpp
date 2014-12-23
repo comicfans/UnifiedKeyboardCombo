@@ -306,6 +306,13 @@ bool EvdevInputDevice::processEvent(){
                 continue;
             }
 
+            if (!m_uinputDev){
+                ukc_log(TRACE,"device only support EV_KEY so drop MSC and SYN event:",&ev);
+                BOOST_ASSERT((ev.type)==EV_MSC || (ev.type==EV_SYN)); 
+
+                continue; 
+            }
+
             ukc_log(TRACE,"passthrough event :",&ev);
 
             BOOST_ASSERT(m_uinputDev);
